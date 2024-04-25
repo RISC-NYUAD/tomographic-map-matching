@@ -21,6 +21,7 @@ find_package(spdlog REQUIRED)
 find_package(teaserpp REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(gflags REQUIRED)
+find_package(nlohmann_json REQUIRED)
 
 # Library
 add_library(${PROJECT_NAME}_lib SHARED
@@ -34,14 +35,24 @@ target_link_libraries(${PROJECT_NAME}_lib
   ${OpenCV_LIBS}
   spdlog::spdlog
   teaserpp::teaser_registration
+  nlohmann_json::nlohmann_json
 )
 target_include_directories(${PROJECT_NAME}_lib PRIVATE include)
 
-# Demo node
-add_executable(${PROJECT_NAME}_standalone src/map_matching.cpp)
-target_link_libraries(${PROJECT_NAME}_standalone
+# # Demo
+# add_executable(${PROJECT_NAME}_demo src/demo.cpp)
+# target_link_libraries(${PROJECT_NAME}_demo
+#   ${PROJECT_NAME}_lib
+#   spdlog::spdlog
+#   gflags
+# )
+# target_include_directories(${PROJECT_NAME}_demo PRIVATE include)
+
+# Batch processing
+add_executable(${PROJECT_NAME}_batch src/batch_processing.cpp)
+target_link_libraries(${PROJECT_NAME}_batch
   ${PROJECT_NAME}_lib
   spdlog::spdlog
   gflags
 )
-target_include_directories(${PROJECT_NAME}_standalone PRIVATE include)
+target_include_directories(${PROJECT_NAME}_batch PRIVATE include)

@@ -8,39 +8,38 @@
 
 namespace map_matcher {
 
+void to_json(json &j, const TeaserORBParameters &p) {
+  to_json(j, static_cast<Parameters>(p));
+  j["teaser_num_correspondences_max"] = p.teaser_num_correspondences_max;
+  j["teaser_noise_bound"] = p.teaser_noise_bound;
+  j["teaser_verbose"] = p.teaser_verbose;
+  j["teaser_3d"] = p.teaser_3d;
+}
+
+void from_json(const json &j, TeaserORBParameters &p) {
+  Parameters p_base;
+  from_json(j, p_base);
+  p = TeaserORBParameters(p_base);
+}
+
+TeaserORB::TeaserORB() : MapMatcherBase() {}
+
 TeaserORB::TeaserORB(TeaserORBParameters parameters)
     : MapMatcherBase(static_cast<Parameters>(parameters)),
       parameters_(parameters) {}
 
-void TeaserORB::PrintParameters() const {
-  spdlog::info("[PARAMS] grid_size: {} threshold: {} orb_num_features: {} "
-               "orb_scale_factor: {} orb_n_levels: {} orb_edge_threshold: {} "
-               "orb_first_level: "
-               "{} orb_wta_k: {} orb_patch_size: {} orb_fast_threshold: {} "
-               "gms_threshold_factor: {} lsh_num_tables: {} lsh_key_size: {} "
-               "lsh_multiprobe_level: {} minimum_z_overlap_percentage: {} "
-               "teaser_noise_bound: "
-               "{} teaser_maximum_correspondences: {}",
-               parameters_.grid_size, parameters_.slice_z_height,
-               parameters_.orb_num_features, parameters_.orb_scale_factor,
-               parameters_.orb_n_levels, parameters_.orb_edge_threshold,
-               parameters_.orb_first_level, parameters_.orb_wta_k,
-               parameters_.orb_patch_size, parameters_.orb_fast_threshold,
-               parameters_.gms_threshold_factor, parameters_.lsh_num_tables,
-               parameters_.lsh_key_size, parameters_.lsh_multiprobe_level,
-               parameters_.minimum_z_overlap_percentage,
-               parameters_.teaser_noise_bound,
-               parameters_.teaser_maximum_correspondences);
-  spdlog::info("[FLAGS] cross_match: {} median_filter: {} gms_matching: {} "
-               "approximate_neighbors: {} teaser_3d: {}",
-               parameters_.cross_match, parameters_.median_filter,
-               parameters_.gms_matching, parameters_.approximate_neighbors,
-               parameters_.teaser_3d);
+json TeaserORB::GetParameters() const {
+  json retval = parameters_;
+  return retval;
 }
 
-HypothesisPtr
-TeaserORB::RegisterPointCloudMaps(const PointCloud::Ptr map1_pcd,
-                                  const PointCloud::Ptr map2_pcd) const {
+void TeaserORB::SetParameters(const json &parameters) {
+  parameters_ = parameters.template get<TeaserORBParameters>();
+}
+
+HypothesisPtr TeaserORB::RegisterPointCloudMaps(const PointCloud::Ptr map1_pcd,
+                                                const PointCloud::Ptr map2_pcd,
+                                                json &stats) const {
   spdlog::info("Number of points map1_size: {} map2_size: {}", map1_pcd->size(),
                map2_pcd->size());
 
@@ -58,9 +57,10 @@ TeaserORB::RegisterPointCloudMaps(const PointCloud::Ptr map1_pcd,
   std::vector<SlicePtr> map1_slice = ComputeSliceImages(map1_pcd),
                         map2_slice = ComputeSliceImages(map2_pcd);
 
+  stats["t_image_generation"] = CalculateTimeSince(indiv);
   spdlog::info(
       "[TIMING] Binary occupancy image generation t_image_generation: {}",
-      CalculateTimeSince(indiv));
+      stats["t_image_generation"]);
   spdlog::info("Number of slices map1_num_slices: {} map2_num_slices: {}",
                map1_slice.size(), map2_slice.size());
 
@@ -338,7 +338,7 @@ HypothesisPtr TeaserORB::RunTeaserWith3DMatches(
     }
   }
 
-  // Retain only the top N, if larger than the teaser_maximum_correspondences
+  // Retain only the top N, if larger than the teaser_num_correspondences_max
   SelectTopNMatches(map1_points, map2_points, distances);
   spdlog::debug("Number of correspondences: {}", map1_points->size());
   if (map1_points->size() < 5) {
@@ -361,7 +361,7 @@ void TeaserORB::SelectTopNMatches(PointCloud::Ptr &map1_points,
                                   PointCloud::Ptr &map2_points,
                                   const std::vector<float> &distances) const {
   // Return as is if there are less matches than maximum
-  if (distances.size() <= parameters_.teaser_maximum_correspondences)
+  if (distances.size() <= parameters_.teaser_num_correspondences_max)
     return;
 
   // Sort by indices
@@ -376,7 +376,7 @@ void TeaserORB::SelectTopNMatches(PointCloud::Ptr &map1_points,
 
   // Collate
   PointCloud::Ptr map1_topN(new PointCloud()), map2_topN(new PointCloud());
-  for (size_t i = 0; i < parameters_.teaser_maximum_correspondences; ++i) {
+  for (size_t i = 0; i < parameters_.teaser_num_correspondences_max; ++i) {
     map1_topN->push_back(map1_points->points[indices[i]]);
     map2_topN->push_back(map2_points->points[indices[i]]);
   }

@@ -325,8 +325,9 @@ int main(int argc, char **argv) {
   }
 
   // Calculate & print errors
+  map_matcher::json stats;
   map_matcher::HypothesisPtr result =
-      matcher_object->RegisterPointCloudMaps(map1_pcd, map2_pcd);
+      matcher_object->RegisterPointCloudMaps(map1_pcd, map2_pcd, stats);
 
   spdlog::info(
       "[RESULT] Translation error (m) translation_error: {}",
@@ -334,6 +335,7 @@ int main(int argc, char **argv) {
   spdlog::info("[RESULT] Rotation error (rad) rotation_error: {}",
                ComputeAngularError(target.topLeftCorner(3, 3),
                                    result->pose.topLeftCorner(3, 3)));
+  spdlog::info("Stats: {}", stats.dump());
 
   // Visualization
   if (FLAGS_visualize) {

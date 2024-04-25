@@ -6,20 +6,28 @@
 namespace map_matcher {
 
 struct TeaserORBParameters : public Parameters {
-  // minimum_z_overlap_percentage may be obsolete if feature matching is good
-  // across different slice heights
-  double minimum_z_overlap_percentage, teaser_noise_bound;
-  size_t teaser_maximum_correspondences;
-  bool teaser_verbose, teaser_3d;
+
+  TeaserORBParameters() = default;
+  TeaserORBParameters(const TeaserORBParameters &) = default;
+  TeaserORBParameters(const Parameters &p) : Parameters(p) {}
+  double teaser_noise_bound = 0.02;
+  size_t teaser_num_correspondences_max = 10000;
+  bool teaser_verbose = false;
+  bool teaser_3d = false;
 };
+
+void to_json(json &j, const TeaserORBParameters &p);
+void from_json(const json &j, TeaserORBParameters &p);
 
 class TeaserORB : public MapMatcherBase {
 public:
+  TeaserORB();
   TeaserORB(TeaserORBParameters parameters);
-  HypothesisPtr
-  RegisterPointCloudMaps(const PointCloud::Ptr pcd1,
-                         const PointCloud::Ptr pcd2) const override;
-  void PrintParameters() const override;
+  json GetParameters() const override;
+  void SetParameters(const json &parameters);
+  HypothesisPtr RegisterPointCloudMaps(const PointCloud::Ptr pcd1,
+                                       const PointCloud::Ptr pcd2,
+                                       json &stats) const override;
 
 private:
   TeaserORBParameters parameters_;

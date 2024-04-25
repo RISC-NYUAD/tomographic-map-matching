@@ -10,6 +10,56 @@
 
 namespace map_matcher {
 
+void to_json(json &j, const Parameters &p) {
+  j = json{{"algorithm", p.algorithm},
+           {"grid_size", p.grid_size},
+           {"slice_z_height", p.slice_z_height},
+           {"minimum_z_overlap_percentage", p.minimum_z_overlap_percentage},
+           {"icp_refinement", p.icp_refinement},
+           {"cross_match", p.cross_match},
+           {"median_filter", p.median_filter},
+           {"approximate_neighbors", p.approximate_neighbors},
+           {"gms_matching", p.gms_matching},
+           {"gms_threshold_factor", p.gms_threshold_factor},
+           {"lsh_num_tables", p.lsh_num_tables},
+           {"lsh_key_size", p.lsh_key_size},
+           {"lsh_multiprobe_level", p.lsh_multiprobe_level},
+           {"orb_scale_factor", p.orb_scale_factor},
+           {"orb_num_features", p.orb_num_features},
+           {"orb_n_levels", p.orb_n_levels},
+           {"orb_edge_threshold", p.orb_edge_threshold},
+           {"orb_first_level", p.orb_first_level},
+           {"orb_wta_k", p.orb_wta_k},
+           {"orb_patch_size", p.orb_patch_size},
+           {"orb_fast_threshold", p.orb_fast_threshold}};
+}
+
+void from_json(const json &j, Parameters &p) {
+  j.at("algorithm").get_to(p.algorithm);
+  j.at("grid_size").get_to(p.grid_size);
+  j.at("slice_z_height").get_to(p.slice_z_height);
+  j.at("minimum_z_overlap_percentage").get_to(p.minimum_z_overlap_percentage);
+  j.at("icp_refinement").get_to(p.icp_refinement);
+  j.at("cross_match").get_to(p.cross_match);
+  j.at("median_filter").get_to(p.median_filter);
+  j.at("approximate_neighbors").get_to(p.approximate_neighbors);
+  j.at("gms_matching").get_to(p.gms_matching);
+  j.at("gms_threshold_factor").get_to(p.gms_threshold_factor);
+  j.at("lsh_num_tables").get_to(p.lsh_num_tables);
+  j.at("lsh_key_size").get_to(p.lsh_key_size);
+  j.at("lsh_multiprobe_level").get_to(p.lsh_multiprobe_level);
+  j.at("orb_scale_factor").get_to(p.orb_scale_factor);
+  j.at("orb_num_features").get_to(p.orb_num_features);
+  j.at("orb_n_levels").get_to(p.orb_n_levels);
+  j.at("orb_edge_threshold").get_to(p.orb_edge_threshold);
+  j.at("orb_first_level").get_to(p.orb_first_level);
+  j.at("orb_wta_k").get_to(p.orb_wta_k);
+  j.at("orb_patch_size").get_to(p.orb_patch_size);
+  j.at("orb_fast_threshold").get_to(p.orb_fast_threshold);
+}
+
+MapMatcherBase::MapMatcherBase() {}
+
 MapMatcherBase::MapMatcherBase(Parameters parameters)
     : parameters_(parameters) {}
 

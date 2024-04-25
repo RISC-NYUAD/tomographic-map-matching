@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <nlohmann/json.hpp>
 #include <opencv2/core/types.hpp>
 #include <opencv2/features2d.hpp>
 #include <opencv2/opencv.hpp>
@@ -10,6 +11,8 @@
 
 namespace map_matcher {
 
+using json = nlohmann::json;
+
 typedef pcl::PointXYZ PointT;
 typedef pcl::PointCloud<PointT> PointCloud;
 typedef pcl::visualization::PointCloudColorHandlerCustom<PointT>
@@ -18,12 +21,38 @@ typedef pcl::visualization::PointCloudColorHandlerGenericField<PointT>
     PointCloudColorGF;
 
 struct Parameters {
-  double grid_size, slice_z_height, gms_threshold_factor, orb_scale_factor;
-  bool cross_match, median_filter, approximate_neighbors, gms_matching;
-  size_t lsh_num_tables, lsh_key_size, lsh_multiprobe_level, icp_refinement;
-  int orb_num_features, orb_n_levels, orb_edge_threshold, orb_first_level,
-      orb_wta_k, orb_patch_size, orb_fast_threshold;
+
+  Parameters() = default;
+  Parameters(const Parameters &) = default;
+
+  size_t algorithm = 0;
+  double grid_size = 0.1;
+  double slice_z_height = 0.1;
+  double minimum_z_overlap_percentage = 0.0;
+  size_t icp_refinement = 0;
+  bool cross_match = false;
+  bool median_filter = false;
+  bool approximate_neighbors = false;
+
+  bool gms_matching = false;
+  double gms_threshold_factor = 0.5;
+
+  size_t lsh_num_tables = 12;
+  size_t lsh_key_size = 20;
+  size_t lsh_multiprobe_level = 2;
+
+  double orb_scale_factor = 1.2;
+  int orb_num_features = 1000;
+  int orb_n_levels = 8;
+  int orb_edge_threshold = 31;
+  int orb_first_level = 0;
+  int orb_wta_k = 2;
+  int orb_patch_size = 31;
+  int orb_fast_threshold = 20;
 };
+
+void to_json(json &j, const Parameters &p);
+void from_json(const json &j, Parameters &p);
 
 struct CartesianBounds {
   CartesianBounds() {
@@ -130,16 +159,17 @@ typedef std::shared_ptr<Hypothesis> HypothesisPtr;
 
 class MapMatcherBase {
 public:
-  virtual HypothesisPtr
-  RegisterPointCloudMaps(const PointCloud::Ptr pcd1,
-                         const PointCloud::Ptr pcd2) const = 0;
-  virtual void PrintParameters() const = 0;
+  virtual HypothesisPtr RegisterPointCloudMaps(const PointCloud::Ptr pcd1,
+                                               const PointCloud::Ptr pcd2,
+                                               json &stats) const = 0;
+  virtual json GetParameters() const = 0;
   void VisualizeHypothesisSlices(const HypothesisPtr hypothesis) const;
   void VisualizeHypothesis(const PointCloud::Ptr &map1_pcd,
                            const PointCloud::Ptr &map2_pcd,
                            const HypothesisPtr &result) const;
 
 protected:
+  MapMatcherBase();
   MapMatcherBase(Parameters parameters);
   Parameters parameters_;
 
