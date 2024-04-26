@@ -1,5 +1,6 @@
 #include <exception>
 #include <filesystem>
+#include <fmt/core.h>
 #include <gflags/gflags.h>
 #include <iostream>
 #include <pcl/io/pcd_io.h>
@@ -281,14 +282,18 @@ int main(int argc, char **argv) {
 
     stats["error_position"] = error_position;
     stats["error_angle"] = error_angle;
+    double total_time = stats["t_total"].template get<double>();
+
+    std::string log_output =
+        fmt::format("Error: {:.5f}m / {:.5f}rad. Took {:.5f}s", error_position,
+                    error_angle, total_time);
 
     if (error_position >
             5.0 * parameters_json["grid_size"].template get<double>() or
         error_angle > 0.1745)
-      spdlog::error("Error pos.: {} angle: {}", error_position, error_angle);
+      spdlog::warn("{}", log_output);
     else
-      spdlog::info("Error pos.: {} angle: {}", error_position, error_angle);
-
+      spdlog::info("{}", log_output);
     spdlog::info("");
 
     output_data["results"].push_back(stats);

@@ -16,12 +16,13 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 find_package(PCL REQUIRED )
-find_package(OpenMP REQUIRED)
-find_package(spdlog REQUIRED)
-find_package(teaserpp REQUIRED)
 find_package(OpenCV REQUIRED)
+find_package(OpenMP REQUIRED)
+find_package(teaserpp REQUIRED)
 find_package(gflags REQUIRED)
 find_package(nlohmann_json REQUIRED)
+find_package(spdlog REQUIRED)
+find_package(fmt REQUIRED)  # spdlog depends on fmt, but still
 
 # Library
 add_library(${PROJECT_NAME}_lib SHARED
@@ -54,5 +55,6 @@ target_link_libraries(${PROJECT_NAME}_batch
   ${PROJECT_NAME}_lib
   spdlog::spdlog
   gflags
+  fmt::fmt
 )
 target_include_directories(${PROJECT_NAME}_batch PRIVATE include)
