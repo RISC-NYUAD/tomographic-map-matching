@@ -37,9 +37,6 @@ HypothesisPtr Consensus::RegisterPointCloudMaps(const PointCloud::Ptr map1_pcd,
                                                 const PointCloud::Ptr map2_pcd,
                                                 json &stats) const {
 
-  stats["map1_size"] = map1_pcd->size();
-  stats["map2_size"] = map2_pcd->size();
-
   if (map1_pcd->size() == 0 or map2_pcd->size() == 0) {
     spdlog::critical("Pointcloud(s) are empty. Aborting");
     return HypothesisPtr(new Hypothesis());
@@ -88,9 +85,6 @@ HypothesisPtr Consensus::RegisterPointCloudMaps(const PointCloud::Ptr map1_pcd,
 
   stats["t_pose_estimation"] = CalculateTimeSince(indiv);
   stats["num_hypothesis_inliers"] = result_unrefined->n_inliers;
-  spdlog::info("Computed pose x: {} y: {} z: {} t: {}", result_unrefined->x,
-               result_unrefined->y, result_unrefined->z,
-               result_unrefined->theta);
   indiv = std::chrono::steady_clock::now();
 
   if (result_unrefined->n_inliers == 0) {
@@ -172,7 +166,7 @@ Consensus::CorrelateSlices(const std::vector<SlicePtr> &map1_features,
     else
       ++map1_index;
   }
-  spdlog::info("Num. correlations num_correlation: {}", count);
+  // spdlog::info("Num. correlations num_correlation: {}", count);
 
   // Providing a lambda sorting function to deal with the use of smart
   // pointers. Otherwise sorted value is not exactly accurate
