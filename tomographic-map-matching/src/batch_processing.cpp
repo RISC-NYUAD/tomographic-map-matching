@@ -253,8 +253,8 @@ int main(int argc, char **argv) {
       Eigen::Matrix3d rotm = target.block<3, 3>(0, 0);
       Eigen::AngleAxisd axang(rotm);
       double angle = axang.angle() * axang.axis()(2);
-      spdlog::info("Target x: {} y: {}: z: {} t: {}", target(0, 3),
-                   target(1, 3), target(2, 3), angle);
+      spdlog::info("Target x: {: .5f} y: {: .5f}: z: {: .5f} t: {: .5f}",
+                   target(0, 3), target(1, 3), target(2, 3), angle);
       stats["target_x"] = target(0, 3);
       stats["target_y"] = target(1, 3);
       stats["target_z"] = target(2, 3);
@@ -270,6 +270,9 @@ int main(int argc, char **argv) {
     stats["result_z"] = result->z;
     stats["result_t"] = result->theta;
 
+    spdlog::info("Result x: {: .5f} y: {: .5f}: z: {: .5f} t: {: .5f}",
+                 result->x, result->y, result->z, result->theta);
+
     double error_position =
         (target.topRightCorner(3, 1) - result->pose.topRightCorner(3, 1))
             .norm();
@@ -279,9 +282,13 @@ int main(int argc, char **argv) {
     stats["error_position"] = error_position;
     stats["error_angle"] = error_angle;
 
-    spdlog::info("Result x: {} y: {}: z: {} t: {}", result->x, result->y,
-                 result->z, result->theta);
-    spdlog::info("Error pos.: {} angle: {}", error_position, error_angle);
+    if (error_position >
+            5.0 * parameters_json["grid_size"].template get<double>() or
+        error_angle > 0.1745)
+      spdlog::error("Error pos.: {} angle: {}", error_position, error_angle);
+    else
+      spdlog::info("Error pos.: {} angle: {}", error_position, error_angle);
+
     spdlog::info("");
 
     output_data["results"].push_back(stats);

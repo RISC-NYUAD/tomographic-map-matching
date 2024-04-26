@@ -40,8 +40,6 @@ void TeaserORB::SetParameters(const json &parameters) {
 HypothesisPtr TeaserORB::RegisterPointCloudMaps(const PointCloud::Ptr map1_pcd,
                                                 const PointCloud::Ptr map2_pcd,
                                                 json &stats) const {
-  spdlog::info("Number of points map1_size: {} map2_size: {}", map1_pcd->size(),
-               map2_pcd->size());
 
   if (map1_pcd->size() == 0 or map2_pcd->size() == 0) {
     spdlog::critical("Pointcloud(s) are empty. Aborting");
@@ -58,12 +56,8 @@ HypothesisPtr TeaserORB::RegisterPointCloudMaps(const PointCloud::Ptr map1_pcd,
                         map2_slice = ComputeSliceImages(map2_pcd);
 
   stats["t_image_generation"] = CalculateTimeSince(indiv);
-  spdlog::info(
-      "[TIMING] Binary occupancy image generation t_image_generation: {}",
-      stats["t_image_generation"]);
-  spdlog::info("Number of slices map1_num_slices: {} map2_num_slices: {}",
-               map1_slice.size(), map2_slice.size());
-
+  stats["map1_num_slices"] = map1_slice.size();
+  stats["map2_num_slices"] = map2_slice.size();
   indiv = std::chrono::steady_clock::now();
 
   // Convert binary images to feature slices
@@ -77,10 +71,9 @@ HypothesisPtr TeaserORB::RegisterPointCloudMaps(const PointCloud::Ptr map1_pcd,
   for (const auto &slice : map2_slice)
     map2_nfeat += slice->kp.size();
 
-  spdlog::info("[TIMING] ORB Feature extraction t_feature_extraction: {}",
-               CalculateTimeSince(indiv));
-  spdlog::info("Number of features map1_num_features: {} map2_num_features: {}",
-               map1_nfeat, map2_nfeat);
+  stats["t_feature_extraction"] = CalculateTimeSince(indiv);
+  stats["map1_num_features"] = map1_nfeat;
+  stats["map2_num_features"] = map2_nfeat;
   indiv = std::chrono::steady_clock::now();
 
   HypothesisPtr result_unrefined;
@@ -88,22 +81,16 @@ HypothesisPtr TeaserORB::RegisterPointCloudMaps(const PointCloud::Ptr map1_pcd,
   if (parameters_.teaser_3d) {
     // Method 2: Compare features across all slices (in 3D)
     result_unrefined = RunTeaserWith3DMatches(map1_slice, map2_slice);
-    spdlog::info("[TIMING] Teaser++ on 3D matches t_pose_estimation: {}",
-                 CalculateTimeSince(indiv));
   } else {
-    // Method 1: Similar to correlations before, using
+    // Method 1: Similar to correlations before, using TEASER
     std::vector<HypothesisPtr> correlation_results =
         CorrelateSlices(map1_slice, map2_slice);
     result_unrefined = correlation_results[0];
-    spdlog::info("[TIMING] Slice correlation t_pose_estimation: {}",
-                 CalculateTimeSince(indiv));
   }
+  stats["t_pose_estimation"] = CalculateTimeSince(indiv);
 
-  spdlog::info("Computed pose x: {} y: {} z: {} t: {}", result_unrefined->x,
-               result_unrefined->y, result_unrefined->z,
-               result_unrefined->theta);
-  spdlog::info("[HYPOTHESES] Inlier hypothesis count num_inliers: {}",
-               result_unrefined->n_inliers);
+  // TODO: Verify if this makes sense
+  stats["num_hypothesis_inliers"] = result_unrefined->n_inliers;
   indiv = std::chrono::steady_clock::now();
 
   // Storing the same pointer to the unrefined result, if there is no refinement
@@ -115,13 +102,12 @@ HypothesisPtr TeaserORB::RegisterPointCloudMaps(const PointCloud::Ptr map1_pcd,
   } else {
     // Spread analysis
     PointT spread = ComputeResultSpread(result_unrefined);
-    spdlog::info("[TIMING] Spread analysis t_spread_analysis: {}",
-                 CalculateTimeSince(indiv));
-    spdlog::info("[SPREAD] spread_ax1: {} spread_ax2: {} spread_axz: {}",
-                 spread.x, spread.y, spread.z);
-    spdlog::info("[HYPOTHESES] Num. of features agreeing with result "
-                 "num_inlier_features: {}",
-                 result_unrefined->inlier_points_1->size());
+    stats["t_spread_analysis"] = CalculateTimeSince(indiv);
+    stats["spread_ax1"] = spread.x;
+    stats["spread_ax2"] = spread.y;
+    stats["spread_axz"] = spread.z;
+    stats["num_feature_inliers"] = result_unrefined->inlier_points_1->size();
+
     indiv = std::chrono::steady_clock::now();
 
     // Skip refinement and do not print timing info related to it
@@ -133,11 +119,10 @@ HypothesisPtr TeaserORB::RegisterPointCloudMaps(const PointCloud::Ptr map1_pcd,
                    result_refined->theta, parameters_.icp_refinement);
     }
   }
-  spdlog::info("[TIMING] Total runtime t_total: {}", CalculateTimeSince(total));
+  stats["t_total"] = CalculateTimeSince(total);
 
   // Measure memory use
-  size_t peak = GetPeakRSS();
-  spdlog::info("[MEMORY] RSS memory_usage_cpu: {}", peak);
+  stats["mem_cpu"] = GetPeakRSS();
 
   return result_refined;
 }
@@ -182,7 +167,7 @@ TeaserORB::CorrelateSlices(const std::vector<SlicePtr> &map1_features,
       ++map1_index;
   }
 
-  spdlog::info("Number of correlations num_correlation: {}", count);
+  // spdlog::info("Number of correlations num_correlation: {}", count);
 
   // Providing a lambda sorting function to deal with the use of smart
   // pointers. Otherwise sorted value is not exactly accurate
