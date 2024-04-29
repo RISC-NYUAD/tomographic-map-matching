@@ -29,6 +29,7 @@ add_library(${PROJECT_NAME}_lib SHARED
   src/map_matcher_base.cpp
   src/consensus.cpp
   src/teaser_orb.cpp
+  src/harris3d_fpfh_ransac.cpp
 )
 target_link_libraries(${PROJECT_NAME}_lib
   ${PCL_LIBRARIES}

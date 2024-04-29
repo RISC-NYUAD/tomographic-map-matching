@@ -7,6 +7,7 @@
 #include <spdlog/spdlog.h>
 #include <sstream>
 #include <tomographic_map_matching/consensus.hpp>
+#include <tomographic_map_matching/harris3d_fpfh_ransac.hpp>
 #include <tomographic_map_matching/map_matcher_base.hpp>
 #include <tomographic_map_matching/teaser_orb.hpp>
 
@@ -155,6 +156,13 @@ int main(int argc, char **argv) {
     auto parameters =
         parameters_json.template get<map_matcher::TeaserORBParameters>();
     matcher = std::make_unique<map_matcher::TeaserORB>(parameters);
+  } else if (parameters_json["algorithm"] == 2) {
+    spdlog::info("Algorithm: Harris3D-FPFH-RANSAC");
+    auto parameters =
+        parameters_json
+            .template get<map_matcher::Harris3DFPFHRansacParameters>();
+    matcher = std::make_unique<map_matcher::Harris3DFPFHRansac>(parameters);
+
   } else {
     auto algorithm_idx = parameters_json["algorithm"].template get<int>();
     spdlog::critical("Algorithm {} is not implemented", algorithm_idx);
@@ -270,34 +278,41 @@ int main(int argc, char **argv) {
     map_matcher::HypothesisPtr result =
         matcher->RegisterPointCloudMaps(pcd1, pcd2, stats);
 
-    stats["result_x"] = result->x;
-    stats["result_y"] = result->y;
-    stats["result_z"] = result->z;
-    stats["result_t"] = result->theta;
+    if (result->n_inliers == 0) {
+      spdlog::error("Map matching unsuccessful");
 
-    spdlog::info("Result x: {: .5f} y: {: .5f}: z: {: .5f} t: {: .5f}",
-                 result->x, result->y, result->z, result->theta);
+    } else {
 
-    double error_position =
-        (target.topRightCorner(3, 1) - result->pose.topRightCorner(3, 1))
-            .norm();
-    double error_angle = ComputeAngularError(target.topLeftCorner(3, 3),
-                                             result->pose.topLeftCorner(3, 3));
+      stats["result_x"] = result->x;
+      stats["result_y"] = result->y;
+      stats["result_z"] = result->z;
+      stats["result_t"] = result->theta;
 
-    stats["error_position"] = error_position;
-    stats["error_angle"] = error_angle;
-    double total_time = stats["t_total"].template get<double>();
+      spdlog::info("Result x: {: .5f} y: {: .5f}: z: {: .5f} t: {: .5f}",
+                   result->x, result->y, result->z, result->theta);
 
-    std::string log_output =
-        fmt::format("Error: {:.5f}m / {:.5f}rad. Took {:.5f}s", error_position,
-                    error_angle, total_time);
+      double error_position =
+          (target.topRightCorner(3, 1) - result->pose.topRightCorner(3, 1))
+              .norm();
+      double error_angle = ComputeAngularError(
+          target.topLeftCorner(3, 3), result->pose.topLeftCorner(3, 3));
 
-    if (error_position >
-            5.0 * parameters_json["grid_size"].template get<double>() or
-        error_angle > 0.1745)
-      spdlog::warn("{}", log_output);
-    else
-      spdlog::info("{}", log_output);
+      stats["error_position"] = error_position;
+      stats["error_angle"] = error_angle;
+      double total_time = stats["t_total"].template get<double>();
+
+      std::string log_output =
+          fmt::format("Error: {:.5f}m / {:.5f}rad. Took {:.5f}s",
+                      error_position, error_angle, total_time);
+
+      if (error_position >
+              5.0 * parameters_json["grid_size"].template get<double>() or
+          error_angle > 0.1745)
+        spdlog::warn("{}", log_output);
+      else
+        spdlog::info("{}", log_output);
+    }
+
     spdlog::info("");
 
     output_data["results"].push_back(stats);
