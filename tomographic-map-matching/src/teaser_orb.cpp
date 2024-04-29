@@ -20,6 +20,19 @@ void from_json(const json &j, TeaserORBParameters &p) {
   Parameters p_base;
   from_json(j, p_base);
   p = TeaserORBParameters(p_base);
+
+  if (j.contains("teaser_num_correspondences_max"))
+    j.at("teaser_num_correspondences_max")
+        .get_to(p.teaser_num_correspondences_max);
+
+  if (j.contains("teaser_noise_bound"))
+    j.at("teaser_noise_bound").get_to(p.teaser_noise_bound);
+
+  if (j.contains("teaser_verbose"))
+    j.at("teaser_verbose").get_to(p.teaser_verbose);
+
+  if (j.contains("teaser_3d"))
+    j.at("teaser_3d").get_to(p.teaser_3d);
 }
 
 TeaserORB::TeaserORB() : MapMatcherBase() {}

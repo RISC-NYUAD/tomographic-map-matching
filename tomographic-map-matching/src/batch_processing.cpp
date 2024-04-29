@@ -18,6 +18,7 @@ DEFINE_string(parameter_config, "",
 DEFINE_string(data_config, "",
               "Scenario file that delineates pairs to be tested");
 DEFINE_bool(visualize, false, "Enable visualizations");
+DEFINE_bool(debug, false, "Enable debugging logs");
 
 Eigen::Matrix4d ReadGTPose(std::string fname) {
   Eigen::Matrix4d pose = Eigen::Matrix4d::Identity();
@@ -89,6 +90,9 @@ int main(int argc, char **argv) {
   gflags::ParseCommandLineFlags(&argc, &argv, false);
 
   // Logger config
+  if (FLAGS_debug)
+    spdlog::set_level(spdlog::level::debug);
+
   spdlog::set_pattern("[%^%l%$] | %v");
 
   // Time of execution

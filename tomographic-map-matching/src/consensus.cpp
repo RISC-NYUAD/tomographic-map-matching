@@ -16,6 +16,12 @@ void from_json(const json &j, ConsensusParameters &p) {
   Parameters p_base;
   from_json(j, p_base);
   p = ConsensusParameters(p_base);
+
+  if (j.contains("consensus_ransac_factor"))
+    j.at("consensus_ransac_factor").get_to(p.consensus_ransac_factor);
+
+  if (j.contains("consensus_use_rigid"))
+    j.at("consensus_use_rigid").get_to(p.consensus_use_rigid);
 }
 
 Consensus::Consensus() : MapMatcherBase() {}
