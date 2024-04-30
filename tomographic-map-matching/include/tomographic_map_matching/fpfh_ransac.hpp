@@ -14,7 +14,7 @@ typedef pcl::PointCloud<KeypointT> KeypointCloud;
 typedef pcl::PointCloud<NormalT> NormalCloud;
 typedef pcl::PointCloud<FeatureT> FeatureCloud;
 
-typedef pcl::HarrisKeypoint3D<PointT, KeypointT> Harris3D;
+typedef pcl::HarrisKeypoint3D<PointT, KeypointT> KeypointDetector;
 
 struct FPFHRANSACParameters : public Parameters {
   FPFHRANSACParameters() = default;
@@ -38,6 +38,9 @@ public:
   FPFHRANSAC(FPFHRANSACParameters parameters);
   json GetParameters() const override;
   void SetParameters(const json &parameters);
+  void DetectAndDescribeKeypoints(const PointCloud::Ptr input,
+                                  PointCloud::Ptr keypoints,
+                                  FeatureCloud::Ptr features) const;
   HypothesisPtr RegisterPointCloudMaps(const PointCloud::Ptr pcd1,
                                        const PointCloud::Ptr pcd2,
                                        json &stats) const override;

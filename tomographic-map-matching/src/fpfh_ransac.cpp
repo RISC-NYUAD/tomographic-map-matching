@@ -75,11 +75,63 @@ void FPFHRANSAC::SetParameters(const json &parameters) {
   }
 }
 
+void FPFHRANSAC::DetectAndDescribeKeypoints(const PointCloud::Ptr input,
+                                            PointCloud::Ptr keypoints,
+                                            FeatureCloud::Ptr features) const {
+
+  spdlog::debug("PCD size: {}", input->size());
+
+  std::chrono::steady_clock::time_point timer;
+  timer = std::chrono::steady_clock::now();
+
+  // Normals are needed for both keypoints and the FPFH
+  NormalCloud::Ptr normals(new NormalCloud);
+  pcl::NormalEstimationOMP<PointT, NormalT> normal_estimator;
+  normal_estimator.setRadiusSearch(parameters_.normal_radius);
+  normal_estimator.setInputCloud(input);
+  normal_estimator.compute(*normals);
+
+  spdlog::debug("Normal estimation took {} s", CalculateTimeSince(timer));
+  timer = std::chrono::steady_clock::now();
+
+  // Keypoints
+  KeypointCloud::Ptr keypoints_with_response(new KeypointCloud);
+  KeypointDetector detector;
+  auto response_method = static_cast<KeypointDetector::ResponseMethod>(
+      parameters_.response_method);
+  detector.setMethod(response_method);
+  detector.setRadius(parameters_.keypoint_radius);
+  detector.setThreshold(parameters_.corner_threshold);
+  detector.setInputCloud(input);
+  detector.setNormals(normals);
+  detector.setSearchMethod(normal_estimator.getSearchMethod());
+  detector.compute(*keypoints_with_response);
+
+  // Extract XYZ only. Output to "keypoints"
+  pcl::ExtractIndices<PointT> selector;
+  selector.setInputCloud(input);
+  selector.setIndices(detector.getKeypointsIndices());
+  selector.filter(*keypoints);
+
+  spdlog::debug("Keypoint detection took {} s", CalculateTimeSince(timer));
+  spdlog::debug("Num. keypoints: {}", keypoints->size());
+  timer = std::chrono::steady_clock::now();
+
+  // Calculate FPFH for the keypoints. Output to "features"
+  pcl::FPFHEstimationOMP<PointT, NormalT, FeatureT> descriptor;
+  descriptor.setRadiusSearch(parameters_.descriptor_radius);
+  descriptor.setInputCloud(keypoints);
+  descriptor.setSearchSurface(input);
+  descriptor.setInputNormals(normals);
+  descriptor.setSearchMethod(normal_estimator.getSearchMethod());
+  descriptor.compute(*features);
+
+  spdlog::debug("Feature computation took {} s", CalculateTimeSince(timer));
+}
+
 HypothesisPtr FPFHRANSAC::RegisterPointCloudMaps(const PointCloud::Ptr map1_pcd,
                                                  const PointCloud::Ptr map2_pcd,
                                                  json &stats) const {
-
-  spdlog::debug("PCD size: {}, {}", map1_pcd->size(), map2_pcd->size());
 
   if (map1_pcd->size() == 0 or map2_pcd->size() == 0) {
     spdlog::critical("Pointcloud(s) are empty. Aborting");
@@ -91,127 +143,53 @@ HypothesisPtr FPFHRANSAC::RegisterPointCloudMaps(const PointCloud::Ptr map1_pcd,
   total = std::chrono::steady_clock::now();
   indiv = std::chrono::steady_clock::now();
 
-  // Compute normals once
-  NormalCloud::Ptr map1_normals(new NormalCloud), map2_normals(new NormalCloud);
-
-  pcl::NormalEstimationOMP<PointT, NormalT> ne1, ne2;
-  ne1.setRadiusSearch(parameters_.keypoint_radius);
-  ne2.setRadiusSearch(parameters_.keypoint_radius);
-
-  ne1.setInputCloud(map1_pcd);
-  ne1.compute(*map1_normals);
-
-  ne2.setInputCloud(map2_pcd);
-  ne2.compute(*map2_normals);
-
-  // stats["t_normal_estimation"] = CalculateTimeSince(indiv);
-  spdlog::debug("Normals estimation completed");
-  // indiv = std::chrono::steady_clock::now();
-
-  // Harris3D with normals
-  KeypointCloud::Ptr map1_kp(new KeypointCloud), map2_kp(new KeypointCloud);
-
-  Harris3D harris_3d_1, harris_3d_2;
-  Harris3D::ResponseMethod response_method =
-      static_cast<Harris3D::ResponseMethod>(parameters_.response_method);
-
-  harris_3d_1.setRadius(parameters_.keypoint_radius);
-  harris_3d_1.setThreshold(parameters_.corner_threshold);
-  harris_3d_1.setMethod(response_method);
-
-  harris_3d_2.setRadius(parameters_.keypoint_radius);
-  harris_3d_2.setThreshold(parameters_.corner_threshold);
-  harris_3d_2.setMethod(response_method);
-
-  harris_3d_1.setInputCloud(map1_pcd);
-  harris_3d_1.setSearchMethod(ne1.getSearchMethod());
-  harris_3d_1.setNormals(map1_normals);
-  harris_3d_1.compute(*map1_kp);
-
-  harris_3d_2.setInputCloud(map2_pcd);
-  harris_3d_2.setSearchMethod(ne2.getSearchMethod());
-  harris_3d_2.setNormals(map2_normals);
-  harris_3d_2.compute(*map2_kp);
-
-  // Extract to new pointcloud
-  PointCloud::Ptr map1_kp_coords(new PointCloud),
-      map2_kp_coords(new PointCloud);
-  {
-    pcl::ExtractIndices<KeypointT> selector;
-    KeypointCloud::Ptr map1_kp_extracted(new KeypointCloud),
-        map2_kp_extracted(new KeypointCloud);
-    selector.setInputCloud(map1_kp);
-    selector.setIndices(harris_3d_1.getKeypointsIndices());
-    selector.filter(*map1_kp_extracted);
-    pcl::copyPointCloud(*map1_kp_extracted, *map1_kp_coords);
-
-    selector.setInputCloud(map2_kp);
-    selector.setIndices(harris_3d_2.getKeypointsIndices());
-    selector.filter(*map2_kp_extracted);
-    pcl::copyPointCloud(*map2_kp_extracted, *map2_kp_coords);
-  }
-
-  spdlog::debug("Keypoint extraction completed. Took {}s. Num kpts: {}, {}",
-                CalculateTimeSince(indiv), map1_kp->size(), map2_kp->size());
-
-  // FPFH for the keypoints
-  pcl::FPFHEstimationOMP<PointT, NormalT, FeatureT> fpfh;
+  // Compute keypoints and features
+  PointCloud::Ptr map1_keypoints(new PointCloud),
+      map2_keypoints(new PointCloud);
   FeatureCloud::Ptr map1_features(new FeatureCloud),
       map2_features(new FeatureCloud);
-  fpfh.setRadiusSearch(parameters_.descriptor_radius);
 
-  fpfh.setInputCloud(map1_kp_coords);
-  fpfh.setInputNormals(map1_normals);
-  fpfh.setSearchSurface(map1_pcd);
-  fpfh.setSearchMethod(ne1.getSearchMethod());
-  fpfh.compute(*map1_features);
-
-  fpfh.setInputCloud(map2_kp_coords);
-  fpfh.setInputNormals(map2_normals);
-  fpfh.setSearchSurface(map2_pcd);
-  fpfh.setSearchMethod(ne2.getSearchMethod());
-  fpfh.compute(*map2_features);
+  DetectAndDescribeKeypoints(map1_pcd, map1_keypoints, map1_features);
+  DetectAndDescribeKeypoints(map2_pcd, map2_keypoints, map2_features);
 
   stats["t_feature_extraction"] = CalculateTimeSince(indiv);
-  spdlog::debug("Feature extraction time: {}",
-                stats["t_feature_extraction"].template get<double>());
-
   stats["map1_num_features"] = map1_features->size();
   stats["map2_num_features"] = map2_features->size();
 
+  spdlog::debug("Feature extraction took {} s",
+                stats["t_feature_extraction"].template get<double>());
   indiv = std::chrono::steady_clock::now();
 
-  // Matching
+  // Matching & registration
   pcl::registration::CorrespondenceEstimation<FeatureT, FeatureT>
       correspondence_estimator;
   pcl::CorrespondencesPtr correspondences(new pcl::Correspondences);
   correspondence_estimator.setInputSource(map2_features);
   correspondence_estimator.setInputTarget(map1_features);
   correspondence_estimator.determineCorrespondences(*correspondences);
-  spdlog::debug("Matching completed");
+  spdlog::debug("Matching complete");
 
   // Limit to one-to-one matches
   pcl::CorrespondencesPtr correspondences_one_to_one(new pcl::Correspondences);
   pcl::registration::CorrespondenceRejectorOneToOne rejector_one_to_one;
   rejector_one_to_one.setInputCorrespondences(correspondences);
   rejector_one_to_one.getCorrespondences(*correspondences_one_to_one);
-  spdlog::debug("One-to-one rejection completed");
+  spdlog::debug("One-to-one rejection complete");
 
   // Correspondance rejection with RANSAC
   pcl::registration::CorrespondenceRejectorSampleConsensus<PointT>
       rejector_ransac;
   pcl::CorrespondencesPtr correspondences_inlier(new pcl::Correspondences);
-  rejector_ransac.setInputSource(map2_kp_coords);
-  rejector_ransac.setInputTarget(map1_kp_coords);
-
   rejector_ransac.setInlierThreshold(parameters_.ransac_inlier_threshold);
   rejector_ransac.setRefineModel(parameters_.ransac_refine_model);
 
+  rejector_ransac.setInputSource(map2_keypoints);
+  rejector_ransac.setInputTarget(map1_keypoints);
   rejector_ransac.setInputCorrespondences(correspondences_one_to_one);
   rejector_ransac.getCorrespondences(*correspondences_inlier);
   Eigen::Matrix4f transform = rejector_ransac.getBestTransformation();
-  stats["t_pose_estimation"] = CalculateTimeSince(indiv);
 
+  stats["t_pose_estimation"] = CalculateTimeSince(indiv);
   spdlog::debug("Pose estimation completed in {}. Num. inliers: {}",
                 stats["t_pose_estimation"].template get<double>(),
                 correspondences_inlier->size());
@@ -232,8 +210,8 @@ HypothesisPtr FPFHRANSAC::RegisterPointCloudMaps(const PointCloud::Ptr map1_pcd,
                                                   result->z, result->theta);
 
   // TODO: Extract inliers to be added to result
-  result->inlier_points_1 = map1_kp_coords;
-  result->inlier_points_2 = map2_kp_coords;
+  result->inlier_points_1 = map1_keypoints;
+  result->inlier_points_2 = map2_keypoints;
 
   stats["t_total"] = CalculateTimeSince(total);
 
