@@ -4,11 +4,11 @@
 #include <opencv2/core/types.hpp>
 #include <spdlog/spdlog.h>
 #include <teaser/registration.h>
-#include <tomographic_map_matching/teaser_orb.hpp>
+#include <tomographic_map_matching/orb_teaser.hpp>
 
 namespace map_matcher {
 
-void to_json(json &j, const TeaserORBParameters &p) {
+void to_json(json &j, const ORBTEASERParameters &p) {
   to_json(j, static_cast<Parameters>(p));
   j["teaser_num_correspondences_max"] = p.teaser_num_correspondences_max;
   j["teaser_noise_bound"] = p.teaser_noise_bound;
@@ -16,10 +16,10 @@ void to_json(json &j, const TeaserORBParameters &p) {
   j["teaser_3d"] = p.teaser_3d;
 }
 
-void from_json(const json &j, TeaserORBParameters &p) {
+void from_json(const json &j, ORBTEASERParameters &p) {
   Parameters p_base;
   from_json(j, p_base);
-  p = TeaserORBParameters(p_base);
+  p = ORBTEASERParameters(p_base);
 
   if (j.contains("teaser_num_correspondences_max"))
     j.at("teaser_num_correspondences_max")
@@ -35,22 +35,22 @@ void from_json(const json &j, TeaserORBParameters &p) {
     j.at("teaser_3d").get_to(p.teaser_3d);
 }
 
-TeaserORB::TeaserORB() : MapMatcherBase() {}
+ORBTEASER::ORBTEASER() : MapMatcherBase() {}
 
-TeaserORB::TeaserORB(TeaserORBParameters parameters)
+ORBTEASER::ORBTEASER(ORBTEASERParameters parameters)
     : MapMatcherBase(static_cast<Parameters>(parameters)),
       parameters_(parameters) {}
 
-json TeaserORB::GetParameters() const {
+json ORBTEASER::GetParameters() const {
   json retval = parameters_;
   return retval;
 }
 
-void TeaserORB::SetParameters(const json &parameters) {
-  parameters_ = parameters.template get<TeaserORBParameters>();
+void ORBTEASER::SetParameters(const json &parameters) {
+  parameters_ = parameters.template get<ORBTEASERParameters>();
 }
 
-HypothesisPtr TeaserORB::RegisterPointCloudMaps(const PointCloud::Ptr map1_pcd,
+HypothesisPtr ORBTEASER::RegisterPointCloudMaps(const PointCloud::Ptr map1_pcd,
                                                 const PointCloud::Ptr map2_pcd,
                                                 json &stats) const {
 
@@ -141,7 +141,7 @@ HypothesisPtr TeaserORB::RegisterPointCloudMaps(const PointCloud::Ptr map1_pcd,
 }
 
 std::vector<HypothesisPtr>
-TeaserORB::CorrelateSlices(const std::vector<SlicePtr> &map1_features,
+ORBTEASER::CorrelateSlices(const std::vector<SlicePtr> &map1_features,
                            const std::vector<SlicePtr> &map2_features) const {
   // Number of possibilities (unless restricted) for slice pairings is n1 + n2 -
   // 1 Starting from bottom slice of m2 and top slice of m1 only, all the way to
@@ -191,7 +191,7 @@ TeaserORB::CorrelateSlices(const std::vector<SlicePtr> &map1_features,
 }
 
 HypothesisPtr
-TeaserORB::RegisterForGivenInterval(const std::vector<SlicePtr> &map1,
+ORBTEASER::RegisterForGivenInterval(const std::vector<SlicePtr> &map1,
                                     const std::vector<SlicePtr> &map2,
                                     HeightIndices indices) const {
   if (indices.m2_max - indices.m2_min != indices.m1_max - indices.m1_min) {
@@ -264,7 +264,7 @@ TeaserORB::RegisterForGivenInterval(const std::vector<SlicePtr> &map1,
 }
 
 std::shared_ptr<teaser::RobustRegistrationSolver>
-TeaserORB::RegisterPointsWithTeaser(const PointCloud::Ptr pcd1,
+ORBTEASER::RegisterPointsWithTeaser(const PointCloud::Ptr pcd1,
                                     const PointCloud::Ptr pcd2) const {
   // Convert to Eigen
   size_t N = pcd1->size();
@@ -300,7 +300,7 @@ TeaserORB::RegisterPointsWithTeaser(const PointCloud::Ptr pcd1,
   return solver;
 }
 
-HypothesisPtr TeaserORB::RunTeaserWith3DMatches(
+HypothesisPtr ORBTEASER::RunTeaserWith3DMatches(
     const std::vector<SlicePtr> &map1_features,
     const std::vector<SlicePtr> &map2_features) const {
   // Extract all matches, slice by slice, in parallel
@@ -355,7 +355,7 @@ HypothesisPtr TeaserORB::RunTeaserWith3DMatches(
   return result;
 }
 
-void TeaserORB::SelectTopNMatches(PointCloud::Ptr &map1_points,
+void ORBTEASER::SelectTopNMatches(PointCloud::Ptr &map1_points,
                                   PointCloud::Ptr &map2_points,
                                   const std::vector<float> &distances) const {
   // Return as is if there are less matches than maximum
@@ -383,7 +383,7 @@ void TeaserORB::SelectTopNMatches(PointCloud::Ptr &map1_points,
   map2_points = map2_topN;
 }
 
-HypothesisPtr TeaserORB::ConstructSolutionFromSolverState(
+HypothesisPtr ORBTEASER::ConstructSolutionFromSolverState(
     const std::shared_ptr<teaser::RobustRegistrationSolver> &solver,
     const PointCloud::Ptr &map1_points,
     const PointCloud::Ptr &map2_points) const {

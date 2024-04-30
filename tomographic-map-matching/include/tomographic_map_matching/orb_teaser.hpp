@@ -5,24 +5,24 @@
 
 namespace map_matcher {
 
-struct TeaserORBParameters : public Parameters {
+struct ORBTEASERParameters : public Parameters {
 
-  TeaserORBParameters() = default;
-  TeaserORBParameters(const TeaserORBParameters &) = default;
-  TeaserORBParameters(const Parameters &p) : Parameters(p) {}
+  ORBTEASERParameters() = default;
+  ORBTEASERParameters(const ORBTEASERParameters &) = default;
+  ORBTEASERParameters(const Parameters &p) : Parameters(p) {}
   double teaser_noise_bound = 0.02;
   size_t teaser_num_correspondences_max = 10000;
   bool teaser_verbose = false;
   bool teaser_3d = false;
 };
 
-void to_json(json &j, const TeaserORBParameters &p);
-void from_json(const json &j, TeaserORBParameters &p);
+void to_json(json &j, const ORBTEASERParameters &p);
+void from_json(const json &j, ORBTEASERParameters &p);
 
-class TeaserORB : public MapMatcherBase {
+class ORBTEASER : public MapMatcherBase {
 public:
-  TeaserORB();
-  TeaserORB(TeaserORBParameters parameters);
+  ORBTEASER();
+  ORBTEASER(ORBTEASERParameters parameters);
   json GetParameters() const override;
   void SetParameters(const json &parameters);
   HypothesisPtr RegisterPointCloudMaps(const PointCloud::Ptr pcd1,
@@ -30,7 +30,7 @@ public:
                                        json &stats) const override;
 
 private:
-  TeaserORBParameters parameters_;
+  ORBTEASERParameters parameters_;
   std::vector<HypothesisPtr>
   CorrelateSlices(const std::vector<SlicePtr> &map1_features,
                   const std::vector<SlicePtr> &map2_features) const;

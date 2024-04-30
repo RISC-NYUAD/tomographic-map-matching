@@ -16,25 +16,26 @@ typedef pcl::PointCloud<FeatureT> FeatureCloud;
 
 typedef pcl::HarrisKeypoint3D<PointT, KeypointT> Harris3D;
 
-struct Harris3DFPFHRansacParameters : public Parameters {
-  Harris3DFPFHRansacParameters() = default;
-  Harris3DFPFHRansacParameters(const Harris3DFPFHRansacParameters &) = default;
-  Harris3DFPFHRansacParameters(const Parameters &p) : Parameters(p) {}
+struct FPFHRANSACParameters : public Parameters {
+  FPFHRANSACParameters() = default;
+  FPFHRANSACParameters(const FPFHRANSACParameters &) = default;
+  FPFHRANSACParameters(const Parameters &p) : Parameters(p) {}
   float normal_radius = 0.3;
-  float fpfh_radius = 0.5;
-  float harris_radius = 0.2;
-  float harris_corner_threshold = 0.0;
+  float keypoint_radius = 0.2;
+  int response_method = 1;
+  float corner_threshold = 0.0;
+  float descriptor_radius = 0.5;
   float ransac_inlier_threshold = 0.1;
   bool ransac_refine_model = true;
 };
 
-void to_json(json &j, const Harris3DFPFHRansacParameters &p);
-void from_json(const json &j, Harris3DFPFHRansacParameters &p);
+void to_json(json &j, const FPFHRANSACParameters &p);
+void from_json(const json &j, FPFHRANSACParameters &p);
 
-class Harris3DFPFHRansac : public MapMatcherBase {
+class FPFHRANSAC : public MapMatcherBase {
 public:
-  Harris3DFPFHRansac();
-  Harris3DFPFHRansac(Harris3DFPFHRansacParameters parameters);
+  FPFHRANSAC();
+  FPFHRANSAC(FPFHRANSACParameters parameters);
   json GetParameters() const override;
   void SetParameters(const json &parameters);
   HypothesisPtr RegisterPointCloudMaps(const PointCloud::Ptr pcd1,
@@ -44,7 +45,7 @@ public:
                           const PointCloud::Ptr keypoints) const;
 
 private:
-  Harris3DFPFHRansacParameters parameters_;
+  FPFHRANSACParameters parameters_;
 };
 
 } // namespace map_matcher

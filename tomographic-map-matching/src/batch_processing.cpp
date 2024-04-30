@@ -7,9 +7,9 @@
 #include <spdlog/spdlog.h>
 #include <sstream>
 #include <tomographic_map_matching/consensus.hpp>
-#include <tomographic_map_matching/harris3d_fpfh_ransac.hpp>
+#include <tomographic_map_matching/fpfh_ransac.hpp>
 #include <tomographic_map_matching/map_matcher_base.hpp>
-#include <tomographic_map_matching/teaser_orb.hpp>
+#include <tomographic_map_matching/orb_teaser.hpp>
 
 using json = map_matcher::json;
 
@@ -152,16 +152,15 @@ int main(int argc, char **argv) {
         parameters_json.template get<map_matcher::ConsensusParameters>();
     matcher = std::make_unique<map_matcher::Consensus>(parameters);
   } else if (parameters_json["algorithm"] == 1) {
-    spdlog::info("Algorithm: TEASER-ORB");
+    spdlog::info("Algorithm: ORB-TEASER");
     auto parameters =
-        parameters_json.template get<map_matcher::TeaserORBParameters>();
-    matcher = std::make_unique<map_matcher::TeaserORB>(parameters);
+        parameters_json.template get<map_matcher::ORBTEASERParameters>();
+    matcher = std::make_unique<map_matcher::ORBTEASER>(parameters);
   } else if (parameters_json["algorithm"] == 2) {
-    spdlog::info("Algorithm: Harris3D-FPFH-RANSAC");
+    spdlog::info("Algorithm: FPFH-RANSAC");
     auto parameters =
-        parameters_json
-            .template get<map_matcher::Harris3DFPFHRansacParameters>();
-    matcher = std::make_unique<map_matcher::Harris3DFPFHRansac>(parameters);
+        parameters_json.template get<map_matcher::FPFHRANSACParameters>();
+    matcher = std::make_unique<map_matcher::FPFHRANSAC>(parameters);
 
   } else {
     auto algorithm_idx = parameters_json["algorithm"].template get<int>();

@@ -7,35 +7,39 @@
 #include <pcl/registration/correspondence_rejection_one_to_one.h>
 #include <pcl/registration/correspondence_rejection_sample_consensus.h>
 #include <spdlog/spdlog.h>
-#include <tomographic_map_matching/harris3d_fpfh_ransac.hpp>
+#include <tomographic_map_matching/fpfh_ransac.hpp>
 
 namespace map_matcher {
 
-void to_json(json &j, const Harris3DFPFHRansacParameters &p) {
+void to_json(json &j, const FPFHRANSACParameters &p) {
   to_json(j, static_cast<Parameters>(p));
   j["normal_radius"] = p.normal_radius;
-  j["fpfh_radius"] = p.fpfh_radius;
-  j["harris_radius"] = p.harris_radius;
-  j["harris_corner_threshold"] = p.harris_corner_threshold;
+  j["descriptor_radius"] = p.descriptor_radius;
+  j["response_method"] = p.response_method;
+  j["keypoint_radius"] = p.keypoint_radius;
+  j["corner_threshold"] = p.corner_threshold;
   j["ransac_inlier_threshold"] = p.ransac_inlier_threshold;
   j["ransac_refine_model"] = p.ransac_refine_model;
 }
 
-void from_json(const json &j, Harris3DFPFHRansacParameters &p) {
+void from_json(const json &j, FPFHRANSACParameters &p) {
   Parameters p_base;
   from_json(j, p_base);
-  p = Harris3DFPFHRansacParameters(p_base);
+  p = FPFHRANSACParameters(p_base);
   if (j.contains("normal_radius"))
     j.at("normal_radius").get_to(p.normal_radius);
 
-  if (j.contains("fpfh_radius"))
-    j.at("fpfh_radius").get_to(p.fpfh_radius);
+  if (j.contains("descriptor_radius"))
+    j.at("descriptor_radius").get_to(p.descriptor_radius);
 
-  if (j.contains("harris_radius"))
-    j.at("harris_radius").get_to(p.harris_radius);
+  if (j.contains("keypoint_radius"))
+    j.at("keypoint_radius").get_to(p.keypoint_radius);
 
-  if (j.contains("harris_corner_threshold"))
-    j.at("harris_corner_threshold").get_to(p.harris_corner_threshold);
+  if (j.contains("response_method"))
+    j.at("response_method").get_to(p.response_method);
+
+  if (j.contains("corner_threshold"))
+    j.at("corner_threshold").get_to(p.corner_threshold);
 
   if (j.contains("ransac_inlier_threshold"))
     j.at("ransac_inlier_threshold").get_to(p.ransac_inlier_threshold);
@@ -44,25 +48,36 @@ void from_json(const json &j, Harris3DFPFHRansacParameters &p) {
     j.at("ransac_refine_model").get_to(p.ransac_refine_model);
 }
 
-Harris3DFPFHRansac::Harris3DFPFHRansac() : MapMatcherBase() {}
+FPFHRANSAC::FPFHRANSAC() : MapMatcherBase() {}
 
-Harris3DFPFHRansac::Harris3DFPFHRansac(Harris3DFPFHRansacParameters parameters)
+FPFHRANSAC::FPFHRANSAC(FPFHRANSACParameters parameters)
     : MapMatcherBase(static_cast<Parameters>(parameters)),
-      parameters_(parameters) {}
+      parameters_(parameters) {
+  if (parameters_.response_method < 1 or parameters_.response_method > 5) {
+    spdlog::warn("Corner response method must be in the range 1-5 (Harris, "
+                 "Noble, Lowe, Tomasi, Curvature). Defaulting to Harris");
+    parameters_.response_method = 1;
+  }
+}
 
-json Harris3DFPFHRansac::GetParameters() const {
+json FPFHRANSAC::GetParameters() const {
   json retval = parameters_;
   return retval;
 }
 
-void Harris3DFPFHRansac::SetParameters(const json &parameters) {
-  parameters_ = parameters.template get<Harris3DFPFHRansacParameters>();
+void FPFHRANSAC::SetParameters(const json &parameters) {
+  parameters_ = parameters.template get<FPFHRANSACParameters>();
+
+  if (parameters_.response_method < 1 or parameters_.response_method > 5) {
+    spdlog::warn("Corner response method must be in the range 1-5 (Harris, "
+                 "Noble, Lowe, Tomasi, Curvature). Defaulting to Harris");
+    parameters_.response_method = 1;
+  }
 }
 
-HypothesisPtr
-Harris3DFPFHRansac::RegisterPointCloudMaps(const PointCloud::Ptr map1_pcd,
-                                           const PointCloud::Ptr map2_pcd,
-                                           json &stats) const {
+HypothesisPtr FPFHRANSAC::RegisterPointCloudMaps(const PointCloud::Ptr map1_pcd,
+                                                 const PointCloud::Ptr map2_pcd,
+                                                 json &stats) const {
 
   spdlog::debug("PCD size: {}, {}", map1_pcd->size(), map2_pcd->size());
 
@@ -80,8 +95,8 @@ Harris3DFPFHRansac::RegisterPointCloudMaps(const PointCloud::Ptr map1_pcd,
   NormalCloud::Ptr map1_normals(new NormalCloud), map2_normals(new NormalCloud);
 
   pcl::NormalEstimationOMP<PointT, NormalT> ne1, ne2;
-  ne1.setRadiusSearch(parameters_.harris_radius);
-  ne2.setRadiusSearch(parameters_.harris_radius);
+  ne1.setRadiusSearch(parameters_.keypoint_radius);
+  ne2.setRadiusSearch(parameters_.keypoint_radius);
 
   ne1.setInputCloud(map1_pcd);
   ne1.compute(*map1_normals);
@@ -97,11 +112,16 @@ Harris3DFPFHRansac::RegisterPointCloudMaps(const PointCloud::Ptr map1_pcd,
   KeypointCloud::Ptr map1_kp(new KeypointCloud), map2_kp(new KeypointCloud);
 
   Harris3D harris_3d_1, harris_3d_2;
-  harris_3d_1.setRadius(parameters_.harris_radius);
-  harris_3d_1.setThreshold(parameters_.harris_corner_threshold);
+  Harris3D::ResponseMethod response_method =
+      static_cast<Harris3D::ResponseMethod>(parameters_.response_method);
 
-  harris_3d_2.setRadius(parameters_.harris_radius);
-  harris_3d_2.setThreshold(parameters_.harris_corner_threshold);
+  harris_3d_1.setRadius(parameters_.keypoint_radius);
+  harris_3d_1.setThreshold(parameters_.corner_threshold);
+  harris_3d_1.setMethod(response_method);
+
+  harris_3d_2.setRadius(parameters_.keypoint_radius);
+  harris_3d_2.setThreshold(parameters_.corner_threshold);
+  harris_3d_2.setMethod(response_method);
 
   harris_3d_1.setInputCloud(map1_pcd);
   harris_3d_1.setSearchMethod(ne1.getSearchMethod());
@@ -138,7 +158,7 @@ Harris3DFPFHRansac::RegisterPointCloudMaps(const PointCloud::Ptr map1_pcd,
   pcl::FPFHEstimationOMP<PointT, NormalT, FeatureT> fpfh;
   FeatureCloud::Ptr map1_features(new FeatureCloud),
       map2_features(new FeatureCloud);
-  fpfh.setRadiusSearch(parameters_.fpfh_radius);
+  fpfh.setRadiusSearch(parameters_.descriptor_radius);
 
   fpfh.setInputCloud(map1_kp_coords);
   fpfh.setInputNormals(map1_normals);
@@ -227,8 +247,8 @@ Harris3DFPFHRansac::RegisterPointCloudMaps(const PointCloud::Ptr map1_pcd,
   return result;
 }
 
-void Harris3DFPFHRansac::VisualizeKeypoints(
-    const PointCloud::Ptr points, const PointCloud::Ptr keypoints) const {
+void FPFHRANSAC::VisualizeKeypoints(const PointCloud::Ptr points,
+                                    const PointCloud::Ptr keypoints) const {
 
   pcl::visualization::PCLVisualizer viewer("Keypoints");
   PointCloudColor points_color(points, 155, 0, 0),
