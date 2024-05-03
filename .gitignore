@@ -1,2 +1,12 @@
-*build*
-*results*
+.*
+!/.gitignore
+**/build
+**/results
+*.pth
+*.pyc
+tmp_home
+weights
+data
+!data/download_weights.sh
+!*/README.org
+*.sif
