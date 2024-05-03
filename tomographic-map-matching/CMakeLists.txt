@@ -8,7 +8,7 @@ if(NOT CMAKE_C_STANDARD)
 endif()
 
 if(NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 17)
+  set(CMAKE_CXX_STANDARD 20)
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -16,32 +16,37 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 find_package(PCL REQUIRED )
-find_package(OpenMP REQUIRED)
-find_package(spdlog REQUIRED)
-find_package(teaserpp REQUIRED)
 find_package(OpenCV REQUIRED)
+find_package(OpenMP REQUIRED)
+find_package(teaserpp REQUIRED)
 find_package(gflags REQUIRED)
+find_package(nlohmann_json REQUIRED)
+find_package(spdlog REQUIRED)
+find_package(fmt REQUIRED)  # spdlog depends on fmt, but still
 
 # Library
-add_library(${PROJECT_NAME}_lib SHARED
+add_library(${PROJECT_NAME} SHARED
   src/map_matcher_base.cpp
   src/consensus.cpp
-  src/teaser_orb.cpp
+  src/orb_teaser.cpp
+  src/fpfh_ransac.cpp
 )
-target_link_libraries(${PROJECT_NAME}_lib
+target_link_libraries(${PROJECT_NAME}
   ${PCL_LIBRARIES}
   OpenMP::OpenMP_CXX
   ${OpenCV_LIBS}
   spdlog::spdlog
   teaserpp::teaser_registration
+  nlohmann_json::nlohmann_json
 )
-target_include_directories(${PROJECT_NAME}_lib PRIVATE include)
+target_include_directories(${PROJECT_NAME} PRIVATE include)
 
-# Demo node
-add_executable(${PROJECT_NAME}_standalone src/map_matching.cpp)
-target_link_libraries(${PROJECT_NAME}_standalone
-  ${PROJECT_NAME}_lib
+# App
+add_executable(${PROJECT_NAME}_app src/batch_processing.cpp)
+target_link_libraries(${PROJECT_NAME}_app
+  ${PROJECT_NAME}
   spdlog::spdlog
   gflags
+  fmt::fmt
 )
-target_include_directories(${PROJECT_NAME}_standalone PRIVATE include)
+target_include_directories(${PROJECT_NAME}_app PRIVATE include)

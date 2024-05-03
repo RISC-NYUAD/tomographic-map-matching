@@ -10,6 +10,56 @@
 
 namespace map_matcher {
 
+void to_json(json &j, const Parameters &p) {
+  j = json{{"algorithm", p.algorithm},
+           {"grid_size", p.grid_size},
+           {"slice_z_height", p.slice_z_height},
+           {"minimum_z_overlap_percentage", p.minimum_z_overlap_percentage},
+           {"icp_refinement", p.icp_refinement},
+           {"cross_match", p.cross_match},
+           {"median_filter", p.median_filter},
+           {"approximate_neighbors", p.approximate_neighbors},
+           {"gms_matching", p.gms_matching},
+           {"gms_threshold_factor", p.gms_threshold_factor},
+           {"lsh_num_tables", p.lsh_num_tables},
+           {"lsh_key_size", p.lsh_key_size},
+           {"lsh_multiprobe_level", p.lsh_multiprobe_level},
+           {"orb_scale_factor", p.orb_scale_factor},
+           {"orb_num_features", p.orb_num_features},
+           {"orb_n_levels", p.orb_n_levels},
+           {"orb_edge_threshold", p.orb_edge_threshold},
+           {"orb_first_level", p.orb_first_level},
+           {"orb_wta_k", p.orb_wta_k},
+           {"orb_patch_size", p.orb_patch_size},
+           {"orb_fast_threshold", p.orb_fast_threshold}};
+}
+
+void from_json(const json &j, Parameters &p) {
+  j.at("algorithm").get_to(p.algorithm);
+  j.at("grid_size").get_to(p.grid_size);
+  j.at("slice_z_height").get_to(p.slice_z_height);
+  j.at("minimum_z_overlap_percentage").get_to(p.minimum_z_overlap_percentage);
+  j.at("icp_refinement").get_to(p.icp_refinement);
+  j.at("cross_match").get_to(p.cross_match);
+  j.at("median_filter").get_to(p.median_filter);
+  j.at("approximate_neighbors").get_to(p.approximate_neighbors);
+  j.at("gms_matching").get_to(p.gms_matching);
+  j.at("gms_threshold_factor").get_to(p.gms_threshold_factor);
+  j.at("lsh_num_tables").get_to(p.lsh_num_tables);
+  j.at("lsh_key_size").get_to(p.lsh_key_size);
+  j.at("lsh_multiprobe_level").get_to(p.lsh_multiprobe_level);
+  j.at("orb_scale_factor").get_to(p.orb_scale_factor);
+  j.at("orb_num_features").get_to(p.orb_num_features);
+  j.at("orb_n_levels").get_to(p.orb_n_levels);
+  j.at("orb_edge_threshold").get_to(p.orb_edge_threshold);
+  j.at("orb_first_level").get_to(p.orb_first_level);
+  j.at("orb_wta_k").get_to(p.orb_wta_k);
+  j.at("orb_patch_size").get_to(p.orb_patch_size);
+  j.at("orb_fast_threshold").get_to(p.orb_fast_threshold);
+}
+
+MapMatcherBase::MapMatcherBase() {}
+
 MapMatcherBase::MapMatcherBase(Parameters parameters)
     : parameters_(parameters) {}
 
@@ -486,34 +536,44 @@ void MapMatcherBase::VisualizeHypothesis(const PointCloud::Ptr &map1_pcd,
   viewer.createViewPort(0.0, 0.0, 1.0, 0.5, vp2);
 
   // Before merging
-  PointCloudColorGF map1Col(map1_pcd, "z"), map2Col(map2_pcd, "z");
-  viewer.addPointCloud(map1_pcd, map1Col, "map1", vp0);
-  viewer.addPointCloud(map2_pcd, map2Col, "map2", vp1);
+  PointCloudColorGF map1_color(map1_pcd, "z"), map2_color(map2_pcd, "z");
+  viewer.addPointCloud(map1_pcd, map1_color, "map1", vp0);
+  viewer.addPointCloud(map2_pcd, map2_color, "map2", vp1);
 
-  // After merging: transform map 2 using the solution found, then display both
-  // in the same window, along with inliers
-  PointCloud::Ptr map2tf(new PointCloud());
-  pcl::transformPointCloud(*map2_pcd, *map2tf, result->pose);
+  // After merging
+  PointCloud::Ptr map2_transformed(new PointCloud);
+  pcl::transformPointCloud(*map2_pcd, *map2_transformed, result->pose);
 
-  PointCloudColor map1tfCol(map1_pcd, 155, 0, 0), map2tfCol(map2tf, 0, 155, 0);
-  viewer.addPointCloud(map1_pcd, map1tfCol, "map1tf", vp2);
-  viewer.addPointCloud(map2tf, map2tfCol, "map2tf", vp2);
+  PointCloudColor map1_merged_color(map1_pcd, 155, 0, 0),
+      map2_merged_color(map2_transformed, 0, 155, 0);
+  viewer.addPointCloud(map1_pcd, map1_merged_color, "map1_merged", vp2);
+  viewer.addPointCloud(map2_transformed, map2_merged_color, "map2_merged", vp2);
 
+  // Draw inliers if they are availabile
   if (result->inlier_points_1 != nullptr) {
-    PointCloud::Ptr inlier_points_2_tf(new PointCloud());
-    pcl::transformPointCloud(*(result->inlier_points_2), *inlier_points_2_tf,
-                             result->pose);
+    PointCloud::Ptr map2_inliers_transformed(new PointCloud);
+    pcl::transformPointCloud(*(result->inlier_points_2),
+                             *map2_inliers_transformed, result->pose);
 
-    PointCloudColor inlier1Col(result->inlier_points_1, 255, 0, 255),
-        inlier2Col(inlier_points_2_tf, 0, 255, 255);
+    PointCloudColor map1_inliers_color(result->inlier_points_1, 255, 0, 255),
+        map2_inliers_color(map2_inliers_transformed, 0, 255, 255);
 
-    viewer.addPointCloud(result->inlier_points_1, inlier1Col, "inlier1", vp2);
-    viewer.addPointCloud(inlier_points_2_tf, inlier2Col, "inlier2", vp2);
-
+    viewer.addPointCloud(result->inlier_points_1, map1_inliers_color,
+                         "map1_inliers", vp2);
+    viewer.addPointCloud(map2_inliers_transformed, map2_inliers_color,
+                         "map2_inliers", vp2);
     viewer.setPointCloudRenderingProperties(
-        pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "inlier1");
+        pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "map1_inliers");
     viewer.setPointCloudRenderingProperties(
-        pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "inlier2");
+        pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "map2_inliers");
+
+    // Add lines between all correspondences
+    for (size_t i = 0; i < result->inlier_points_1->size(); ++i) {
+      const PointT &pt1 = result->inlier_points_1->points.at(i),
+                   &pt2 = map2_inliers_transformed->points.at(i);
+      std::string line_name = "inlier_line_" + std::to_string(i + 1);
+      viewer.addLine(pt1, pt2, 255, 255, 255, line_name, vp2);
+    }
   }
 
   viewer.spin();

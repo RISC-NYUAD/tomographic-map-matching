@@ -5,17 +5,27 @@
 namespace map_matcher {
 
 struct ConsensusParameters : public Parameters {
-  double ransac_gsize_factor, minimum_z_overlap_percentage;
-  bool use_rigid;
+
+  ConsensusParameters() = default;
+  ConsensusParameters(const ConsensusParameters &) = default;
+  ConsensusParameters(const Parameters &p) : Parameters(p) {}
+
+  double consensus_ransac_factor = 5.0;
+  bool consensus_use_rigid = false;
 };
+
+void to_json(json &j, const ConsensusParameters &p);
+void from_json(const json &j, ConsensusParameters &p);
 
 class Consensus : public MapMatcherBase {
 public:
+  Consensus();
   Consensus(ConsensusParameters parameters);
-  HypothesisPtr
-  RegisterPointCloudMaps(const PointCloud::Ptr pcd1,
-                         const PointCloud::Ptr pcd2) const override;
-  void PrintParameters() const override;
+  json GetParameters() const override;
+  void SetParameters(const json &parameters);
+  HypothesisPtr RegisterPointCloudMaps(const PointCloud::Ptr pcd1,
+                                       const PointCloud::Ptr pcd2,
+                                       json &stats) const override;
 
 private:
   ConsensusParameters parameters_;

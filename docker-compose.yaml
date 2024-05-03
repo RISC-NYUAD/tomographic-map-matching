@@ -8,7 +8,8 @@ services:
     volumes:
       - /dev/dri:/dev/dri
       - /etc/localtime:/etc/localtime:ro
-      - /data/$USER/slicematch-research/varied-height:/home/user/data:ro
+      - /data/$USER/workspace/tomographic-map-matching/tomographic-map-matching:/home/user/tomographic-map-matching
+      - /data/$USER/slicematch-research/varied-height:/data:ro
     deploy:
       resources:
         reservations:

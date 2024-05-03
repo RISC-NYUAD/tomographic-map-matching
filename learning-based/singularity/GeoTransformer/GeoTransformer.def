@@ -1,0 +1,25 @@
+Bootstrap: docker
+From: nvidia/cuda:11.1.1-cudnn8-devel-ubuntu20.04
+
+%post
+    # GUI tools, dev tools etc.
+    apt-get update
+    apt-get install --no-install-recommends -y git libgl1 libgomp1 mesa-utils python-is-python3 python3-pip python3-dev
+    apt-get clean
+
+    # Use the specific PyTorch version
+    pip install --no-cache-dir torch==1.7.1+cu110 -f https://download.pytorch.org/whl/torch_stable.html
+
+    # Copy the fork to add changes
+    cd /usr/local/src
+    git clone https://github.com/h-utkuunlu/GeoTransformer
+    cd GeoTransformer
+    pip install --no-cache-dir --timeout=2000 -r requirements.txt
+    python setup.py build develop
+
+    # Workspace to mount CWD / other places
+    mkdir /workspace
+
+%runscript
+    cd /workspace
+    exec /bin/bash

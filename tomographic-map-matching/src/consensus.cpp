@@ -6,40 +6,42 @@
 
 namespace map_matcher {
 
+void to_json(json &j, const ConsensusParameters &p) {
+  to_json(j, static_cast<Parameters>(p));
+  j["consensus_ransac_factor"] = p.consensus_ransac_factor;
+  j["consensus_use_rigid"] = p.consensus_use_rigid;
+}
+
+void from_json(const json &j, ConsensusParameters &p) {
+  Parameters p_base;
+  from_json(j, p_base);
+  p = ConsensusParameters(p_base);
+
+  if (j.contains("consensus_ransac_factor"))
+    j.at("consensus_ransac_factor").get_to(p.consensus_ransac_factor);
+
+  if (j.contains("consensus_use_rigid"))
+    j.at("consensus_use_rigid").get_to(p.consensus_use_rigid);
+}
+
+Consensus::Consensus() : MapMatcherBase() {}
+
 Consensus::Consensus(ConsensusParameters parameters)
     : MapMatcherBase(static_cast<Parameters>(parameters)),
       parameters_(parameters) {}
 
-void Consensus::PrintParameters() const {
-  spdlog::info("[PARAMS] grid_size: {} threshold: {} orb_num_features: {} "
-               "orb_scale_factor: {} orb_n_levels: {} orb_edge_threshold: {} "
-               "orb_first_level: "
-               "{} orb_wta_k: {} orb_patch_size: {} orb_fast_threshold: {} "
-               "gms_threshold_factor: {} lsh_num_tables: {} lsh_key_size: {} "
-               "lsh_multiprobe_level: {} minimum_z_overlap_percentage: {} "
-               "consensus_ransac_factor: "
-               "{}",
-               parameters_.grid_size, parameters_.slice_z_height,
-               parameters_.orb_num_features, parameters_.orb_scale_factor,
-               parameters_.orb_n_levels, parameters_.orb_edge_threshold,
-               parameters_.orb_first_level, parameters_.orb_wta_k,
-               parameters_.orb_patch_size, parameters_.orb_fast_threshold,
-               parameters_.gms_threshold_factor, parameters_.lsh_num_tables,
-               parameters_.lsh_key_size, parameters_.lsh_multiprobe_level,
-               parameters_.minimum_z_overlap_percentage,
-               parameters_.ransac_gsize_factor);
-  spdlog::info("[FLAGS] cross_match: {} median_filter: {} gms_matching: {} "
-               "approximate_neighbors: {} use_rigid: {}",
-               parameters_.cross_match, parameters_.median_filter,
-               parameters_.gms_matching, parameters_.approximate_neighbors,
-               parameters_.use_rigid);
+json Consensus::GetParameters() const {
+  json retval = parameters_;
+  return retval;
 }
 
-HypothesisPtr
-Consensus::RegisterPointCloudMaps(const PointCloud::Ptr map1_pcd,
-                                  const PointCloud::Ptr map2_pcd) const {
-  spdlog::info("Number of points map1_size: {} map2_size: {}", map1_pcd->size(),
-               map2_pcd->size());
+void Consensus::SetParameters(const json &parameters) {
+  parameters_ = parameters.template get<ConsensusParameters>();
+}
+
+HypothesisPtr Consensus::RegisterPointCloudMaps(const PointCloud::Ptr map1_pcd,
+                                                const PointCloud::Ptr map2_pcd,
+                                                json &stats) const {
 
   if (map1_pcd->size() == 0 or map2_pcd->size() == 0) {
     spdlog::critical("Pointcloud(s) are empty. Aborting");
@@ -55,11 +57,9 @@ Consensus::RegisterPointCloudMaps(const PointCloud::Ptr map1_pcd,
   std::vector<SlicePtr> map1_slice = ComputeSliceImages(map1_pcd),
                         map2_slice = ComputeSliceImages(map2_pcd);
 
-  spdlog::info(
-      "[TIMING] Binary occupancy image generation t_image_generation: {}",
-      CalculateTimeSince(indiv));
-  spdlog::info("Number of slices map1_num_slices: {} map2_num_slices: {}",
-               map1_slice.size(), map2_slice.size());
+  stats["t_image_generation"] = CalculateTimeSince(indiv);
+  stats["map1_num_slices"] = map1_slice.size();
+  stats["map2_num_slices"] = map2_slice.size();
 
   // VisualizeImageSlices(map1_image);
   // VisualizeImageSlices(map2_image);
@@ -76,10 +76,9 @@ Consensus::RegisterPointCloudMaps(const PointCloud::Ptr map1_pcd,
   for (const auto &slice : map2_slice)
     map2_nfeat += slice->kp.size();
 
-  spdlog::info("[TIMING] ORB Feature extraction t_feature_extraction: {}",
-               CalculateTimeSince(indiv));
-  spdlog::info("Number of features map1_num_features: {} map2_num_features: {}",
-               map1_nfeat, map2_nfeat);
+  stats["t_feature_extraction"] = CalculateTimeSince(indiv);
+  stats["map1_num_features"] = map1_nfeat;
+  stats["map2_num_features"] = map2_nfeat;
   indiv = std::chrono::steady_clock::now();
 
   std::vector<HypothesisPtr> slice_correlations =
@@ -90,15 +89,8 @@ Consensus::RegisterPointCloudMaps(const PointCloud::Ptr map1_pcd,
   HypothesisPtr result_unrefined = slice_correlations[0],
                 result_refined = result_unrefined;
 
-  spdlog::info("[TIMING] Slice correlation t_pose_estimation: {}",
-               CalculateTimeSince(indiv));
-  indiv = std::chrono::steady_clock::now();
-
-  spdlog::info("Computed pose x: {} y: {} z: {} t: {}", result_unrefined->x,
-               result_unrefined->y, result_unrefined->z,
-               result_unrefined->theta);
-  spdlog::info("[HYPOTHESES] Inlier hypothesis count num_inliers: {}",
-               result_unrefined->n_inliers);
+  stats["t_pose_estimation"] = CalculateTimeSince(indiv);
+  stats["num_hypothesis_inliers"] = result_unrefined->n_inliers;
   indiv = std::chrono::steady_clock::now();
 
   if (result_unrefined->n_inliers == 0) {
@@ -106,13 +98,13 @@ Consensus::RegisterPointCloudMaps(const PointCloud::Ptr map1_pcd,
   } else {
     // Spread analysis
     PointT spread = ComputeResultSpread(result_unrefined);
-    spdlog::info("[TIMING] Spread analysis t_spread_analysis: {}",
-                 CalculateTimeSince(indiv));
-    spdlog::info("[SPREAD] spread_ax1: {} spread_ax2: {} spread_axz: {}",
-                 spread.x, spread.y, spread.z);
-    spdlog::info("[HYPOTHESES] Num. of features agreeing with result "
-                 "num_inlier_features: {}",
-                 result_unrefined->inlier_points_1->size());
+
+    stats["t_spread_analysis"] = CalculateTimeSince(indiv);
+    stats["spread_ax1"] = spread.x;
+    stats["spread_ax2"] = spread.y;
+    stats["spread_axz"] = spread.z;
+    stats["num_feature_inliers"] = result_unrefined->inlier_points_1->size();
+
     indiv = std::chrono::steady_clock::now();
 
     // ICP refinement
@@ -125,11 +117,10 @@ Consensus::RegisterPointCloudMaps(const PointCloud::Ptr map1_pcd,
                    result_refined->theta, parameters_.icp_refinement);
     }
   }
-  spdlog::info("[TIMING] Total runtime t_total: {}", CalculateTimeSince(total));
+  stats["t_total"] = CalculateTimeSince(total);
 
   // Measure memory use
-  size_t peak = GetPeakRSS();
-  spdlog::info("[MEMORY] RSS memory_usage_cpu: {}", peak);
+  stats["mem_cpu"] = GetPeakRSS();
 
   return result_refined;
 }
@@ -181,7 +172,7 @@ Consensus::CorrelateSlices(const std::vector<SlicePtr> &map1_features,
     else
       ++map1_index;
   }
-  spdlog::info("Num. correlations num_correlation: {}", count);
+  // spdlog::info("Num. correlations num_correlation: {}", count);
 
   // Providing a lambda sorting function to deal with the use of smart
   // pointers. Otherwise sorted value is not exactly accurate
@@ -263,7 +254,7 @@ Consensus::ComputeMapTf(const std::vector<SlicePtr> &map1,
     size_t refineIters = 10;                                 // Default: 10
 
     cv::Mat tf;
-    if (parameters_.use_rigid)
+    if (parameters_.consensus_use_rigid)
       tf = cv::estimateRigid2D(points2, points1, inliers, cv::RANSAC,
                                ransacReprojThresh, maxIters, confidence,
                                refineIters);
@@ -317,7 +308,8 @@ Consensus::ComputeMapTf(const std::vector<SlicePtr> &map1,
 HypothesisPtr Consensus::VoteBetweenSlices(
     const std::vector<SliceTransformPtr> &results) const {
   std::vector<HypothesisPtr> voted_results(results.size());
-  double dist_thresh = parameters_.grid_size * parameters_.ransac_gsize_factor,
+  double dist_thresh =
+             parameters_.grid_size * parameters_.consensus_ransac_factor,
          tThresh = 0.015; // ~ 15 deg
 
   // Skip if there are no slices to vote for

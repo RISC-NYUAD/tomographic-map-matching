@@ -47,7 +47,7 @@ RUN wget -q https://github.com/PointCloudLibrary/pcl/archive/refs/tags/pcl-$PCL_
 
 RUN cd pcl-pcl-$PCL_VERSION && mkdir build && cd build \
     && cmake -DCMAKE_BUILD_TYPE=Release .. \
-    && sudo make -j2 install
+    && sudo make -j8 install
 
 # OpenCV
 ARG OPENCV_VERSION=4.9.0
@@ -97,11 +97,13 @@ RUN git clone --depth 1 https://github.com/MIT-SPARK/TEASER-plusplus \
 RUN sudo apt-get install -y --no-install-recommends \
     libspdlog-dev \
     libgflags-dev \
+    nlohmann-json3-dev \
     && sudo apt-get clean
 
-ARG PKG=tomographic-map-matching
-COPY --chown=$USERNAME:$USERNAME $PKG ./$PKG
+RUN sudo install -d -o $USERNAME -g $USERNAME /data
 
-RUN mkdir -p $PKG/build && cd $PKG/build \
-    && cmake .. \
-    && make -j8
+# ARG PKG=tomographic-map-matching
+# COPY --chown=$USERNAME:$USERNAME $PKG ./$PKG
+# RUN mkdir -p $PKG/build && cd $PKG/build
+# WORKDIR /home/$USERNAME/$PKG/build
+# RUN cmake -DCMAKE_BUILD_TYPE=Release .. # && make -j8
