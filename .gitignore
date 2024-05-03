@@ -1,12 +1,10 @@
 .*
-!/.gitignore
-**/build
-**/results
-*.pth
+!.gitignore
+build
+results
+*.pth*
 *.pyc
 tmp_home
-weights
 data
-!data/download_weights.sh
-!*/README.org
+!**/README.org
 *.sif

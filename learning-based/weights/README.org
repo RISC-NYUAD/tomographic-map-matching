@@ -1,0 +1,4 @@
+* Pretrained Weights
+
+Relevant folders from here are mounted to the containers. Use ~download_weights.sh~ to
+download pretrained weights.
