@@ -25,13 +25,13 @@ find_package(spdlog REQUIRED)
 find_package(fmt REQUIRED)  # spdlog depends on fmt, but still
 
 # Library
-add_library(${PROJECT_NAME}_lib SHARED
+add_library(${PROJECT_NAME} SHARED
   src/map_matcher_base.cpp
   src/consensus.cpp
   src/orb_teaser.cpp
   src/fpfh_ransac.cpp
 )
-target_link_libraries(${PROJECT_NAME}_lib
+target_link_libraries(${PROJECT_NAME}
   ${PCL_LIBRARIES}
   OpenMP::OpenMP_CXX
   ${OpenCV_LIBS}
@@ -39,23 +39,14 @@ target_link_libraries(${PROJECT_NAME}_lib
   teaserpp::teaser_registration
   nlohmann_json::nlohmann_json
 )
-target_include_directories(${PROJECT_NAME}_lib PRIVATE include)
+target_include_directories(${PROJECT_NAME} PRIVATE include)
 
-# # Demo
-# add_executable(${PROJECT_NAME}_demo src/demo.cpp)
-# target_link_libraries(${PROJECT_NAME}_demo
-#   ${PROJECT_NAME}_lib
-#   spdlog::spdlog
-#   gflags
-# )
-# target_include_directories(${PROJECT_NAME}_demo PRIVATE include)
-
-# Batch processing
-add_executable(${PROJECT_NAME}_batch src/batch_processing.cpp)
-target_link_libraries(${PROJECT_NAME}_batch
-  ${PROJECT_NAME}_lib
+# App
+add_executable(${PROJECT_NAME}_app src/batch_processing.cpp)
+target_link_libraries(${PROJECT_NAME}_app
+  ${PROJECT_NAME}
   spdlog::spdlog
   gflags
   fmt::fmt
 )
-target_include_directories(${PROJECT_NAME}_batch PRIVATE include)
+target_include_directories(${PROJECT_NAME}_app PRIVATE include)

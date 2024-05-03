@@ -41,6 +41,11 @@ public:
   void DetectAndDescribeKeypoints(const PointCloud::Ptr input,
                                   PointCloud::Ptr keypoints,
                                   FeatureCloud::Ptr features) const;
+  void ExtractInlierKeypoints(const PointCloud::Ptr map1_pcd,
+                              const PointCloud::Ptr map2_pcd,
+                              const pcl::CorrespondencesPtr correspondences,
+                              PointCloud::Ptr map1_inliers,
+                              PointCloud::Ptr map2_inliers) const;
   HypothesisPtr RegisterPointCloudMaps(const PointCloud::Ptr pcd1,
                                        const PointCloud::Ptr pcd2,
                                        json &stats) const override;

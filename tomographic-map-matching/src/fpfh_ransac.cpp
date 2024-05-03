@@ -129,6 +129,23 @@ void FPFHRANSAC::DetectAndDescribeKeypoints(const PointCloud::Ptr input,
   spdlog::debug("Feature computation took {} s", CalculateTimeSince(timer));
 }
 
+void FPFHRANSAC::ExtractInlierKeypoints(
+    const PointCloud::Ptr map1_pcd, const PointCloud::Ptr map2_pcd,
+    const pcl::CorrespondencesPtr correspondences, PointCloud::Ptr map1_inliers,
+    PointCloud::Ptr map2_inliers) const {
+
+  // The assumption here is that the map1_pcd is the target (match), map2_pcd is
+  // the source (query)
+  size_t N = correspondences->size();
+  map1_inliers->resize(N);
+  map2_inliers->resize(N);
+
+  for (size_t i = 0; i < N; ++i) {
+    map2_inliers->at(i) = map2_pcd->points[correspondences->at(i).index_query];
+    map1_inliers->at(i) = map1_pcd->points[correspondences->at(i).index_match];
+  }
+}
+
 HypothesisPtr FPFHRANSAC::RegisterPointCloudMaps(const PointCloud::Ptr map1_pcd,
                                                  const PointCloud::Ptr map2_pcd,
                                                  json &stats) const {
@@ -194,9 +211,14 @@ HypothesisPtr FPFHRANSAC::RegisterPointCloudMaps(const PointCloud::Ptr map1_pcd,
                 stats["t_pose_estimation"].template get<double>(),
                 correspondences_inlier->size());
 
+  // Extract inliers
+  PointCloud::Ptr map1_inliers(new PointCloud), map2_inliers(new PointCloud);
+  ExtractInlierKeypoints(map1_pcd, map2_pcd, correspondences_inlier,
+                         map1_inliers, map2_inliers);
+
+  // Construct result
   HypothesisPtr result(new Hypothesis);
   result->n_inliers = correspondences_inlier->size();
-
   result->x = transform(0, 3);
   result->y = transform(1, 3);
   result->z = transform(2, 3);
@@ -205,13 +227,11 @@ HypothesisPtr FPFHRANSAC::RegisterPointCloudMaps(const PointCloud::Ptr map1_pcd,
   Eigen::AngleAxisf axang(rotm);
   float angle = axang.angle() * axang.axis()(2);
   result->theta = angle;
-
   result->pose = ConstructTransformFromParameters(result->x, result->y,
                                                   result->z, result->theta);
 
-  // TODO: Extract inliers to be added to result
-  result->inlier_points_1 = map1_keypoints;
-  result->inlier_points_2 = map2_keypoints;
+  result->inlier_points_1 = map1_inliers;
+  result->inlier_points_2 = map2_inliers;
 
   stats["t_total"] = CalculateTimeSince(total);
 

@@ -536,34 +536,44 @@ void MapMatcherBase::VisualizeHypothesis(const PointCloud::Ptr &map1_pcd,
   viewer.createViewPort(0.0, 0.0, 1.0, 0.5, vp2);
 
   // Before merging
-  PointCloudColorGF map1Col(map1_pcd, "z"), map2Col(map2_pcd, "z");
-  viewer.addPointCloud(map1_pcd, map1Col, "map1", vp0);
-  viewer.addPointCloud(map2_pcd, map2Col, "map2", vp1);
+  PointCloudColorGF map1_color(map1_pcd, "z"), map2_color(map2_pcd, "z");
+  viewer.addPointCloud(map1_pcd, map1_color, "map1", vp0);
+  viewer.addPointCloud(map2_pcd, map2_color, "map2", vp1);
 
-  // After merging: transform map 2 using the solution found, then display both
-  // in the same window, along with inliers
-  PointCloud::Ptr map2tf(new PointCloud());
-  pcl::transformPointCloud(*map2_pcd, *map2tf, result->pose);
+  // After merging
+  PointCloud::Ptr map2_transformed(new PointCloud);
+  pcl::transformPointCloud(*map2_pcd, *map2_transformed, result->pose);
 
-  PointCloudColor map1tfCol(map1_pcd, 155, 0, 0), map2tfCol(map2tf, 0, 155, 0);
-  viewer.addPointCloud(map1_pcd, map1tfCol, "map1tf", vp2);
-  viewer.addPointCloud(map2tf, map2tfCol, "map2tf", vp2);
+  PointCloudColor map1_merged_color(map1_pcd, 155, 0, 0),
+      map2_merged_color(map2_transformed, 0, 155, 0);
+  viewer.addPointCloud(map1_pcd, map1_merged_color, "map1_merged", vp2);
+  viewer.addPointCloud(map2_transformed, map2_merged_color, "map2_merged", vp2);
 
+  // Draw inliers if they are availabile
   if (result->inlier_points_1 != nullptr) {
-    PointCloud::Ptr inlier_points_2_tf(new PointCloud());
-    pcl::transformPointCloud(*(result->inlier_points_2), *inlier_points_2_tf,
-                             result->pose);
+    PointCloud::Ptr map2_inliers_transformed(new PointCloud);
+    pcl::transformPointCloud(*(result->inlier_points_2),
+                             *map2_inliers_transformed, result->pose);
 
-    PointCloudColor inlier1Col(result->inlier_points_1, 255, 0, 255),
-        inlier2Col(inlier_points_2_tf, 0, 255, 255);
+    PointCloudColor map1_inliers_color(result->inlier_points_1, 255, 0, 255),
+        map2_inliers_color(map2_inliers_transformed, 0, 255, 255);
 
-    viewer.addPointCloud(result->inlier_points_1, inlier1Col, "inlier1", vp2);
-    viewer.addPointCloud(inlier_points_2_tf, inlier2Col, "inlier2", vp2);
-
+    viewer.addPointCloud(result->inlier_points_1, map1_inliers_color,
+                         "map1_inliers", vp2);
+    viewer.addPointCloud(map2_inliers_transformed, map2_inliers_color,
+                         "map2_inliers", vp2);
     viewer.setPointCloudRenderingProperties(
-        pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "inlier1");
+        pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "map1_inliers");
     viewer.setPointCloudRenderingProperties(
-        pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "inlier2");
+        pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "map2_inliers");
+
+    // Add lines between all correspondences
+    for (size_t i = 0; i < result->inlier_points_1->size(); ++i) {
+      const PointT &pt1 = result->inlier_points_1->points.at(i),
+                   &pt2 = map2_inliers_transformed->points.at(i);
+      std::string line_name = "inlier_line_" + std::to_string(i + 1);
+      viewer.addLine(pt1, pt2, 255, 255, 255, line_name, vp2);
+    }
   }
 
   viewer.spin();
