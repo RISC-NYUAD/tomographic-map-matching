@@ -223,7 +223,7 @@ int main(int argc, char **argv) {
     stats["pcd1"] = pair.at(0);
     stats["pcd2"] = pair.at(1);
 
-    spdlog::info("-> Pair: {} -> {}", pair.at(0), pair.at(1));
+    spdlog::info("-> Pair: {} -> {}", pair.at(1), pair.at(0));
 
     // Load clouds
     map_matcher::PointCloud::Ptr pcd1(new map_matcher::PointCloud()),

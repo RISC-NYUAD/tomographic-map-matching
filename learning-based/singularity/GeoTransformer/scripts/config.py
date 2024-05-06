@@ -79,6 +79,7 @@ _C.optim.grad_acc_steps = 1
 # model - backbone
 _C.backbone = edict()
 _C.backbone.num_stages = 4
+# _C.backbone.init_voxel_size = 0.025
 _C.backbone.init_voxel_size = 0.1
 _C.backbone.kernel_size = 15
 _C.backbone.base_radius = 2.5
