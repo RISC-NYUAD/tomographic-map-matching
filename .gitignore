@@ -5,6 +5,4 @@ results
 *.pth*
 *.pyc
 tmp_home
-data
-!**/README.org
 *.sif
