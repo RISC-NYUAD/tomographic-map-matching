@@ -8,8 +8,7 @@ From: nvidia/cuda:11.1.1-cudnn8-devel-ubuntu20.04
     apt-get clean
 
     # Use the specific PyTorch version
-    pip install torch==1.8.2 --extra-index-url https://download.pytorch.org/whl/lts/1.8/cu111
-    # pip install --no-cache-dir torch==1.7.1+cu110 -f https://download.pytorch.org/whl/torch_stable.html
+    pip install --no-cache-dir torch==1.7.1+cu110 -f https://download.pytorch.org/whl/torch_stable.html
 
     # Copy the fork to add changes
     cd /usr/local/src
