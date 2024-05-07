@@ -38,6 +38,9 @@ def make_parser():
     parser.add_argument(
         "--data_config", required=True, help="Path to JSON file that denotes pairs"
     )
+    parser.add_argument(
+        "--grid_size", type=float, default=0.1, help="Grid size for KPConv backend"
+    )
     parser.add_argument("--visualize", action="store_true")
     return parser
 
@@ -77,6 +80,8 @@ def main():
     parser = make_parser()
     args = parser.parse_args()
     cfg = make_cfg()
+    cfg.backbone.init_voxel_size = args.grid_size
+
     neighbor_limits = [38, 36, 36, 38]  # default setting in 3DMatch
 
     # Load data config
