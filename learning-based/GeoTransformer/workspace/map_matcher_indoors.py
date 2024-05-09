@@ -227,7 +227,7 @@ def main():
             # Save results after each run
             output_data["results"].append(stats)
             with open(output_file, "w") as f:
-                json.dump(output_data, f)
+                json.dump(output_data, f, indent=2)
             print()
 
     print(" | Completed!")

@@ -1,0 +1,43 @@
+Bootstrap: docker
+From: nvidia/cuda:11.1.1-cudnn8-devel-ubuntu20.04
+
+%files
+    BUFFER/workspace/KNN_CUDA /workspace/KNN_CUDA
+
+%post
+    # GUI tools, dev tools etc.
+    apt-get update
+    apt-get install --no-install-recommends -y git libgl1 libgomp1 mesa-utils python-is-python3 python3-pip python3-dev ninja-build
+    apt-get clean
+
+    # Use the specific PyTorch version
+    pip install --no-cache-dir torch==1.9.1+cu111 -f https://download.pytorch.org/whl/torch_stable.html
+
+    # Additional dependencies
+    pip install --no-cache-dir open3d==0.13.0 kornia einops easydict tensorboard tensorboardX
+
+    cd /usr/local/src
+    git clone https://github.com/erikwijmans/Pointnet2_PyTorch
+    cd Pointnet2_PyTorch
+    pip install --no-cache-dir -r requirements.txt
+    pip install -e .
+
+    cd /usr/local/src
+    git clone https://github.com/KinglittleQ/torch-batch-svd.git
+    cd torch-batch-svd
+    pip install -e .
+
+    # KNN_CUDA has JIT compilation steps that creates additional folders.
+    # Mount it in the workspace so that it is read-write
+    cd /workspace/KNN_CUDA
+    pip install -e .
+
+    # Package itself
+    cd /usr/local/src
+    git clone https://github.com/h-utkuunlu/BUFFER
+    cd BUFFER/cpp_wrappers
+    sh compile_wrappers.sh
+
+%runscript
+    cd /workspace
+    exec /bin/bash

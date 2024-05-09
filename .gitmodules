@@ -1,3 +1,9 @@
 [submodule "learning-based/GeoTransformer/repo"]
 	path = learning-based/GeoTransformer/repo
 	url = https://github.com/h-utkuunlu/GeoTransformer
+[submodule "learning-based/BUFFER/repo"]
+	path = learning-based/BUFFER/repo
+	url = https://github.com/h-utkuunlu/BUFFER
+[submodule "learning-based/BUFFER/workspace/KNN_CUDA"]
+	path = learning-based/BUFFER/workspace/KNN_CUDA
+	url = https://github.com/unlimblue/KNN_CUDA.git
