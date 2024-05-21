@@ -17,7 +17,6 @@ from models.BUFFER import buffer
 from ThreeDMatch.config import make_cfg
 from ThreeDMatch.dataloader import collate_fn_descriptor
 
-
 import warnings
 
 p = psutil.Process()
@@ -229,8 +228,9 @@ def main():
                     f" | Error: {rte:.5f}m / {rre:.5f}rad. Took {stats['t_total']:.5f}s"
                 )
 
-        except:
-            print(f" | Cannot process")
+        except Exception as e:
+            print(f" | Cannot process. Reason: {e}")
+            stats["exception"] = str(e)
 
         finally:
             stats["mem_cpu"] = p.memory_info().rss

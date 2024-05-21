@@ -7,3 +7,6 @@
 [submodule "learning-based/BUFFER/workspace/KNN_CUDA"]
 	path = learning-based/BUFFER/workspace/KNN_CUDA
 	url = https://github.com/unlimblue/KNN_CUDA.git
+[submodule "learning-based/RoITr/repo"]
+	path = learning-based/RoITr/repo
+	url = https://github.com/h-utkuunlu/RoITr

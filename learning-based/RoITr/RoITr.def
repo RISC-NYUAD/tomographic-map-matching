@@ -1,0 +1,26 @@
+Bootstrap: docker
+From: nvidia/cuda:11.1.1-cudnn8-devel-ubuntu20.04
+
+%files
+    BUFFER/workspace/KNN_CUDA /workspace/KNN_CUDA
+
+%post
+    # GUI tools, dev tools etc.
+    apt-get update
+    apt-get install --no-install-recommends -y git libgl1 libgomp1 mesa-utils python-is-python3 python3-pip python3-dev ninja-build
+    apt-get clean
+
+    # Use the specific PyTorch version
+    pip install --no-cache-dir torch==1.8.0+cu111 torchvision==0.9.0+cu111 torchaudio==0.8.0 -f https://download.pytorch.org/whl/torch_stable.html
+
+    # Package itself
+    cd /usr/local/src
+    git clone https://github.com/h-utkuunlu/RoITr
+    cd RoITr
+    pip install --no-cache-dir -r requirements.txt
+    cd cpp_wrappers/pointops
+    python setup.py install
+
+%runscript
+    cd /workspace
+    exec /bin/bash

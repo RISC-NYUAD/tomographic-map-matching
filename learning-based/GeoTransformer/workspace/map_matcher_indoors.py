@@ -217,8 +217,9 @@ def main():
                 src_pcd.paint_uniform_color(get_color("custom_blue"))
                 draw_geometries(ref_pcd, src_pcd)
 
-        except:
-            print(f" | Cannot process")
+        except Exception as e:
+            print(f" | Cannot process. Reason: {e}")
+            stats["exception"] = str(e)
 
         finally:
             stats["mem_cpu"] = p.memory_info().rss
