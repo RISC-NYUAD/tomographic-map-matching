@@ -106,10 +106,12 @@ def main():
         "results": [],
     }
 
+    algorithm_name = "GeoTransformer"
     experiment_name_from_data = "_".join(args.data_config[:-5].split("/")[-2:])
     time_string = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
     output_file = os.path.join(
-        "/results", experiment_name_from_data + "_" + time_string + ".json"
+        "/results",
+        algorithm_name + "_" + experiment_name_from_data + "_" + time_string + ".json",
     )
 
     print(f" | Output file: '{output_file}'")

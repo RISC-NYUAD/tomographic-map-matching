@@ -1,13 +1,13 @@
 import argparse
 import json
 import os
-import psutil
 import sys
 import time
 
 import easydict
 import numpy as np
 import open3d as o3d
+import psutil
 from scipy.spatial.transform import Rotation
 import torch
 
@@ -150,9 +150,11 @@ def main():
         f" | Data root: {data_config['root']}. Num. pairs: {len(data_config['pairs'])}"
     )
 
+    algorithm_name = "roitr"
     experiment_name_from_data = "_".join(args.data_config[:-5].split("/")[-2:])
     output_file = os.path.join(
-        "/results", experiment_name_from_data + "_" + time_string + ".json"
+        "/results",
+        algorithm_name + "_" + experiment_name_from_data + "_" + time_string + ".json",
     )
 
     # JSON to store results
@@ -177,8 +179,6 @@ def main():
         map2_path = os.path.join(data_config["root"], pair[1])
         map1_pcd = o3d.io.read_point_cloud(map1_path)
         map2_pcd = o3d.io.read_point_cloud(map2_path)
-
-        # print(f" | PCD Sizes: {len(map1_pcd.points)}, {len(map2_pcd.points)}")
 
         # Ensure the order is correct after this point
         tf = compute_gt_pose(map2_path, map1_path)

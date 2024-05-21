@@ -145,9 +145,11 @@ def main():
         f" | Data root: {data_config['root']}. Num. pairs: {len(data_config['pairs'])}"
     )
 
+    algorithm_name = "buffer"
     experiment_name_from_data = "_".join(args.data_config[:-5].split("/")[-2:])
     output_file = os.path.join(
-        "/results", experiment_name_from_data + "_" + time_string + ".json"
+        "/results",
+        algorithm_name + "_" + experiment_name_from_data + "_" + time_string + ".json",
     )
 
     # JSON to store results

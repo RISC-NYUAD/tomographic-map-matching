@@ -319,7 +319,7 @@ int main(int argc, char **argv) {
     // Record results
     {
       std::ofstream f(output_file_path);
-      f << output_data.dump() << std::endl;
+      f << std::setw(2) << output_data << std::endl;
     }
 
     // Visualization
