@@ -10,3 +10,6 @@
 [submodule "learning-based/RoITr/repo"]
 	path = learning-based/RoITr/repo
 	url = https://github.com/h-utkuunlu/RoITr
+[submodule "learning-based/DeepGlobalRegistration/repo"]
+	path = learning-based/DeepGlobalRegistration/repo
+	url = https://github.com/h-utkuunlu/DeepGlobalRegistration
