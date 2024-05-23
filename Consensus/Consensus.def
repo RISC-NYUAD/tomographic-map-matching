@@ -1,6 +1,9 @@
 Bootstrap: docker
 From: ubuntu:22.04
 
+%environment
+    export LD_LIBRARY_PATH=/usr/local/lib
+
 %files
     Consensus/estimateRigid2D.patch /usr/local/src/estimateRigid2D.patch
 
