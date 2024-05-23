@@ -1,15 +1,15 @@
-[submodule "learning-based/GeoTransformer/repo"]
-	path = learning-based/GeoTransformer/repo
+[submodule "GeoTransformer/repo"]
+	path = GeoTransformer/repo
 	url = https://github.com/h-utkuunlu/GeoTransformer
-[submodule "learning-based/BUFFER/repo"]
-	path = learning-based/BUFFER/repo
+[submodule "BUFFER/repo"]
+	path = BUFFER/repo
 	url = https://github.com/h-utkuunlu/BUFFER
-[submodule "learning-based/BUFFER/workspace/KNN_CUDA"]
-	path = learning-based/BUFFER/workspace/KNN_CUDA
+[submodule "BUFFER/workspace/KNN_CUDA"]
+	path = BUFFER/workspace/KNN_CUDA
 	url = https://github.com/unlimblue/KNN_CUDA.git
-[submodule "learning-based/RoITr/repo"]
-	path = learning-based/RoITr/repo
+[submodule "RoITr/repo"]
+	path = RoITr/repo
 	url = https://github.com/h-utkuunlu/RoITr
-[submodule "learning-based/DeepGlobalRegistration/repo"]
-	path = learning-based/DeepGlobalRegistration/repo
+[submodule "DeepGlobalRegistration/repo"]
+	path = DeepGlobalRegistration/repo
 	url = https://github.com/h-utkuunlu/DeepGlobalRegistration

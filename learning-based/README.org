@@ -1,3 +1,0 @@
-* Learning-based Map Matching/Registration
-
-Singularity .def files, weights, and other useful material to run tests on state-of-the-art systems.
