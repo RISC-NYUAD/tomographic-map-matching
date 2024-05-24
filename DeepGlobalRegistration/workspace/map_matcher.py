@@ -1,9 +1,10 @@
+import argparse
 import json
 import os
 import sys
 import time
 
-import easydict
+from easydict import EasyDict
 import numpy as np
 import open3d as o3d
 import psutil
@@ -13,7 +14,6 @@ import torch
 sys.path.append("/usr/local/src/DeepGlobalRegistration")
 
 from core.deep_global_registration import DeepGlobalRegistration
-from local_config import get_config
 
 p = psutil.Process()
 
@@ -59,9 +59,27 @@ def visualize(map1_pcd, map2_pcd, tf):
 def main():
     time_string = time.strftime("%Y-%m-%d-%H-%M-%S")
 
+    # Args
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--model_config",
+        required=True,
+        help="Path to JSON file that provides model hyperparameters",
+    )
+    parser.add_argument(
+        "--data_config", required=True, help="Path to JSON file that denotes pairs"
+    )
+    parser.add_argument("--visualize", action="store_true")
+    args = parser.parse_args()
+
     # Load model
-    args = get_config()
-    model = DeepGlobalRegistration(args)
+    with open(args.model_config, "r") as f:
+        model_config = EasyDict(json.load(f))
+
+    model = DeepGlobalRegistration(model_config)
+
+    # Override voxel size
+    model.voxel_size = model_config.voxel_size
 
     # Deactivate ICP refinement as it is not used in any other method
     model.icp = False
@@ -86,7 +104,7 @@ def main():
     # JSON to store results
     output_data = {
         "data_config": args.data_config,
-        "full_configuration": vars(args),
+        "full_configuration": dict(model_config),
         "results": [],
     }
 

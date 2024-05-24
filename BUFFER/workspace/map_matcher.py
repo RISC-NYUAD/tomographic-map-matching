@@ -14,8 +14,6 @@ from scipy.spatial.transform import Rotation
 import torch
 
 from models.BUFFER import buffer
-from ThreeDMatch.config import make_cfg
-from ThreeDMatch.dataloader import collate_fn_descriptor
 
 import warnings
 
@@ -70,7 +68,9 @@ def compute_and_append_normals(pts):
     return pts_with_normals
 
 
-def process_pcd_pair(source_raw, target_raw, pose, config, neighborhood_limits):
+def process_pcd_pair(
+    source_raw, target_raw, pose, config, neighborhood_limits, collate_fn
+):
     # Mainly imitating the process here:
     # https://github.com/The-Learning-And-Vision-Atelier-LAVA/BUFFER/blob/main/ThreeDMatch/dataset.py#L89
 
@@ -100,7 +100,7 @@ def process_pcd_pair(source_raw, target_raw, pose, config, neighborhood_limits):
         "tgt_id": 0,
     }
 
-    return collate_fn_descriptor([data], config, neighborhood_limits)
+    return collate_fn([data], config, neighborhood_limits)
 
 
 def main():
@@ -108,6 +108,12 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--data_config", required=True, help="Path to JSON file that denotes pairs"
+    )
+    parser.add_argument(
+        "--mode",
+        required=True,
+        type=int,
+        help="1: indoors (3DMatch), 2: outdoors (KITTI)",
     )
     parser.add_argument(
         "--grid_size", type=float, default=0.1, help="Grid size for KPConv backend"
@@ -118,12 +124,26 @@ def main():
     time_string = time.strftime("%Y-%m-%d-%H-%M-%S")
 
     # Load model
+    if args.mode == 1:
+        from ThreeDMatch.config import make_cfg
+        from ThreeDMatch.dataloader import collate_fn_descriptor
+
+        model_type = "ThreeDMatch"
+    elif args.mode == 2:
+        from KITTI.config import make_cfg
+        from KITTI.dataloader import collate_fn_descriptor
+
+        model_type = "KITTI"
+    else:
+        print("Invalid mode. Must be 1 (indoors) or 2 (outdoors)")
+        exit(-1)
+
     config = make_cfg()
     config.stage = "test"
     model = buffer(config)
 
     for stage in config.train.all_stage:
-        path_to_weights = f"/weights/ThreeDMatch/{stage}/best.pth"
+        path_to_weights = f"/weights/{model_type}/{stage}/best.pth"
         state_dict = torch.load(path_to_weights)
         new_dict = {k: v for k, v in state_dict.items() if stage in k}
         model_dict = model.state_dict()
@@ -197,7 +217,12 @@ def main():
                 start = time.time()
                 start_data = time.time()
                 data = process_pcd_pair(
-                    map2_pcd, map1_pcd, tf, config, neighborhood_limits
+                    map2_pcd,
+                    map1_pcd,
+                    tf,
+                    config,
+                    neighborhood_limits,
+                    collate_fn_descriptor,
                 )
                 end_data = time.time()
 
@@ -210,7 +235,9 @@ def main():
                 stats["t_registration"] = end_algo - start_algo
                 stats["t_total"] = end - start
 
-                theta_est = Rotation.from_matrix(tf_est[0:3, 0:3]).as_euler("zyx")[0]
+                theta_est = Rotation.from_matrix(tf_est.copy()[0:3, 0:3]).as_euler(
+                    "zyx"
+                )[0]
 
                 stats["result_x"] = float(tf_est[0, 3])
                 stats["result_y"] = float(tf_est[1, 3])
