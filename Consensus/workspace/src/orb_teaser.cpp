@@ -89,55 +89,40 @@ HypothesisPtr ORBTEASER::RegisterPointCloudMaps(const PointCloud::Ptr map1_pcd,
   stats["map2_num_features"] = map2_nfeat;
   indiv = std::chrono::steady_clock::now();
 
-  HypothesisPtr result_unrefined;
+  HypothesisPtr result;
 
   if (parameters_.teaser_3d) {
     // Method 2: Compare features across all slices (in 3D)
-    result_unrefined = RunTeaserWith3DMatches(map1_slice, map2_slice);
+    result = RunTeaserWith3DMatches(map1_slice, map2_slice);
   } else {
     // Method 1: Similar to correlations before, using TEASER
     std::vector<HypothesisPtr> correlation_results =
         CorrelateSlices(map1_slice, map2_slice);
-    result_unrefined = correlation_results[0];
+    result = correlation_results[0];
   }
   stats["t_pose_estimation"] = CalculateTimeSince(indiv);
 
   // TODO: Verify if this makes sense
-  stats["num_hypothesis_inliers"] = result_unrefined->n_inliers;
-  indiv = std::chrono::steady_clock::now();
+  stats["num_hypothesis_inliers"] = result->n_inliers;
 
-  // Storing the same pointer to the unrefined result, if there is no refinement
-  // to be performed
-  HypothesisPtr result_refined(result_unrefined);
-
-  if (result_unrefined->n_inliers == 0) {
+  if (result->n_inliers == 0) {
     spdlog::warn("Pose cannot be calculated");
   } else {
     // Spread analysis
-    PointT spread = ComputeResultSpread(result_unrefined);
+    indiv = std::chrono::steady_clock::now();
+    PointT spread = ComputeResultSpread(result);
     stats["t_spread_analysis"] = CalculateTimeSince(indiv);
     stats["spread_ax1"] = spread.x;
     stats["spread_ax2"] = spread.y;
     stats["spread_axz"] = spread.z;
-    stats["num_feature_inliers"] = result_unrefined->inlier_points_1->size();
-
-    indiv = std::chrono::steady_clock::now();
-
-    // Skip refinement and do not print timing info related to it
-    if (parameters_.icp_refinement) {
-      result_refined = RefineResult(result_unrefined);
-      spdlog::info("[TIMING] ICP refinement: {}", CalculateTimeSince(indiv));
-      spdlog::info("Refined pose x: {} y: {} z: {} t: {} icp: {}",
-                   result_refined->x, result_refined->y, result_refined->z,
-                   result_refined->theta, parameters_.icp_refinement);
-    }
+    stats["num_feature_inliers"] = result->inlier_points_1->size();
   }
   stats["t_total"] = CalculateTimeSince(total);
 
   // Measure memory use
   stats["mem_cpu"] = GetPeakRSS();
 
-  return result_refined;
+  return result;
 }
 
 std::vector<HypothesisPtr>

@@ -84,45 +84,29 @@ HypothesisPtr Consensus::RegisterPointCloudMaps(const PointCloud::Ptr map1_pcd,
   std::vector<HypothesisPtr> slice_correlations =
       CorrelateSlices(map1_slice, map2_slice);
 
-  // Storing the same pointer to the unrefined result, if there is no refinement
-  // to be performed
-  HypothesisPtr result_unrefined = slice_correlations[0],
-                result_refined = result_unrefined;
+  HypothesisPtr result = slice_correlations[0];
 
   stats["t_pose_estimation"] = CalculateTimeSince(indiv);
-  stats["num_hypothesis_inliers"] = result_unrefined->n_inliers;
-  indiv = std::chrono::steady_clock::now();
+  stats["num_hypothesis_inliers"] = result->n_inliers;
 
-  if (result_unrefined->n_inliers == 0) {
+  if (result->n_inliers == 0) {
     spdlog::warn("Pose cannot be calculated");
   } else {
     // Spread analysis
-    PointT spread = ComputeResultSpread(result_unrefined);
-
+    indiv = std::chrono::steady_clock::now();
+    PointT spread = ComputeResultSpread(result);
     stats["t_spread_analysis"] = CalculateTimeSince(indiv);
     stats["spread_ax1"] = spread.x;
     stats["spread_ax2"] = spread.y;
     stats["spread_axz"] = spread.z;
-    stats["num_feature_inliers"] = result_unrefined->inlier_points_1->size();
-
-    indiv = std::chrono::steady_clock::now();
-
-    // ICP refinement
-    // Skip refinement and do not print timing info related to it
-    if (parameters_.icp_refinement) {
-      result_refined = RefineResult(result_unrefined);
-      spdlog::info("[TIMING] ICP refinement: {}", CalculateTimeSince(indiv));
-      spdlog::info("Refined pose x: {} y: {} z: {} t: {} icp: {}",
-                   result_refined->x, result_refined->y, result_refined->z,
-                   result_refined->theta, parameters_.icp_refinement);
-    }
+    stats["num_feature_inliers"] = result->inlier_points_1->size();
   }
   stats["t_total"] = CalculateTimeSince(total);
 
   // Measure memory use
   stats["mem_cpu"] = GetPeakRSS();
 
-  return result_refined;
+  return result;
 }
 
 std::vector<HypothesisPtr>
