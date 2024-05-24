@@ -30,6 +30,7 @@ add_library(${PROJECT_NAME} SHARED
   src/consensus.cpp
   src/orb_teaser.cpp
   src/fpfh_ransac.cpp
+  src/fpfh_teaser.cpp
 )
 target_link_libraries(${PROJECT_NAME}
   ${PCL_LIBRARIES}

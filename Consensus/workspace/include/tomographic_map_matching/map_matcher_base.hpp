@@ -163,6 +163,8 @@ public:
                                                const PointCloud::Ptr pcd2,
                                                json &stats) const = 0;
   virtual json GetParameters() const = 0;
+  virtual std::string GetName() const = 0;
+
   void VisualizeHypothesisSlices(const HypothesisPtr hypothesis) const;
   void VisualizeHypothesis(const PointCloud::Ptr &map1_pcd,
                            const PointCloud::Ptr &map2_pcd,

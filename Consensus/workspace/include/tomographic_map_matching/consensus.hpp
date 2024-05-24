@@ -26,6 +26,7 @@ public:
   HypothesisPtr RegisterPointCloudMaps(const PointCloud::Ptr pcd1,
                                        const PointCloud::Ptr pcd2,
                                        json &stats) const override;
+  std::string GetName() const override { return "Consensus"; }
 
 private:
   ConsensusParameters parameters_;

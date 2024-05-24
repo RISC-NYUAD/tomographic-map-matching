@@ -28,6 +28,7 @@ public:
   HypothesisPtr RegisterPointCloudMaps(const PointCloud::Ptr pcd1,
                                        const PointCloud::Ptr pcd2,
                                        json &stats) const override;
+  std::string GetName() const override { return "ORB-TEASER"; }
 
 private:
   ORBTEASERParameters parameters_;

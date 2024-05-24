@@ -2,6 +2,7 @@
 
 #include <pcl/features/normal_3d.h>
 #include <pcl/keypoints/harris_3d.h>
+#include <teaser/registration.h>
 #include <tomographic_map_matching/map_matcher_base.hpp>
 
 namespace map_matcher {
@@ -16,26 +17,27 @@ typedef pcl::PointCloud<FeatureT> FeatureCloud;
 
 typedef pcl::HarrisKeypoint3D<PointT, KeypointT> KeypointDetector;
 
-struct FPFHRANSACParameters : public Parameters {
-  FPFHRANSACParameters() = default;
-  FPFHRANSACParameters(const FPFHRANSACParameters &) = default;
-  FPFHRANSACParameters(const Parameters &p) : Parameters(p) {}
+struct FPFHTEASERParameters : public Parameters {
+  FPFHTEASERParameters() = default;
+  FPFHTEASERParameters(const FPFHTEASERParameters &) = default;
+  FPFHTEASERParameters(const Parameters &p) : Parameters(p) {}
   float normal_radius = 0.3;
   float keypoint_radius = 0.2;
   int response_method = 1;
   float corner_threshold = 0.0;
   float descriptor_radius = 0.5;
-  float ransac_inlier_threshold = 0.1;
-  bool ransac_refine_model = true;
+  double teaser_noise_bound = 0.02;
+  size_t teaser_num_correspondences_max = 10000;
+  bool teaser_verbose = false;
 };
 
-void to_json(json &j, const FPFHRANSACParameters &p);
-void from_json(const json &j, FPFHRANSACParameters &p);
+void to_json(json &j, const FPFHTEASERParameters &p);
+void from_json(const json &j, FPFHTEASERParameters &p);
 
-class FPFHRANSAC : public MapMatcherBase {
+class FPFHTEASER : public MapMatcherBase {
 public:
-  FPFHRANSAC();
-  FPFHRANSAC(FPFHRANSACParameters parameters);
+  FPFHTEASER();
+  FPFHTEASER(FPFHTEASERParameters parameters);
   json GetParameters() const override;
   void SetParameters(const json &parameters);
   HypothesisPtr RegisterPointCloudMaps(const PointCloud::Ptr pcd1,
@@ -43,10 +45,10 @@ public:
                                        json &stats) const override;
   void VisualizeKeypoints(const PointCloud::Ptr pcd,
                           const PointCloud::Ptr keypoints) const;
-  std::string GetName() const override { return "FPFH-RANSAC"; }
+  std::string GetName() const override { return "FPFH-TEASER"; }
 
 private:
-  FPFHRANSACParameters parameters_;
+  FPFHTEASERParameters parameters_;
   void ExtractInlierKeypoints(const PointCloud::Ptr map1_pcd,
                               const PointCloud::Ptr map2_pcd,
                               const pcl::CorrespondencesPtr correspondences,

@@ -5,27 +5,26 @@
 #include <pcl/keypoints/harris_3d.h>
 #include <pcl/registration/correspondence_estimation.h>
 #include <pcl/registration/correspondence_rejection_one_to_one.h>
-#include <pcl/registration/correspondence_rejection_sample_consensus.h>
 #include <spdlog/spdlog.h>
-#include <tomographic_map_matching/fpfh_ransac.hpp>
+#include <tomographic_map_matching/fpfh_teaser.hpp>
 
 namespace map_matcher {
 
-void to_json(json &j, const FPFHRANSACParameters &p) {
+void to_json(json &j, const FPFHTEASERParameters &p) {
   to_json(j, static_cast<Parameters>(p));
   j["normal_radius"] = p.normal_radius;
   j["descriptor_radius"] = p.descriptor_radius;
   j["response_method"] = p.response_method;
   j["keypoint_radius"] = p.keypoint_radius;
   j["corner_threshold"] = p.corner_threshold;
-  j["ransac_inlier_threshold"] = p.ransac_inlier_threshold;
-  j["ransac_refine_model"] = p.ransac_refine_model;
+  j["teaser_noise_bound"] = p.teaser_noise_bound;
+  j["teaser_verbose"] = p.teaser_verbose;
 }
 
-void from_json(const json &j, FPFHRANSACParameters &p) {
+void from_json(const json &j, FPFHTEASERParameters &p) {
   Parameters p_base;
   from_json(j, p_base);
-  p = FPFHRANSACParameters(p_base);
+  p = FPFHTEASERParameters(p_base);
   if (j.contains("normal_radius"))
     j.at("normal_radius").get_to(p.normal_radius);
 
@@ -41,16 +40,16 @@ void from_json(const json &j, FPFHRANSACParameters &p) {
   if (j.contains("corner_threshold"))
     j.at("corner_threshold").get_to(p.corner_threshold);
 
-  if (j.contains("ransac_inlier_threshold"))
-    j.at("ransac_inlier_threshold").get_to(p.ransac_inlier_threshold);
+  if (j.contains("teaser_noise_bound"))
+    j.at("teaser_noise_bound").get_to(p.teaser_noise_bound);
 
-  if (j.contains("ransac_refine_model"))
-    j.at("ransac_refine_model").get_to(p.ransac_refine_model);
+  if (j.contains("teaser_verbose"))
+    j.at("teaser_verbose").get_to(p.teaser_verbose);
 }
 
-FPFHRANSAC::FPFHRANSAC() : MapMatcherBase() {}
+FPFHTEASER::FPFHTEASER() : MapMatcherBase() {}
 
-FPFHRANSAC::FPFHRANSAC(FPFHRANSACParameters parameters)
+FPFHTEASER::FPFHTEASER(FPFHTEASERParameters parameters)
     : MapMatcherBase(static_cast<Parameters>(parameters)),
       parameters_(parameters) {
   if (parameters_.response_method < 1 or parameters_.response_method > 5) {
@@ -60,13 +59,13 @@ FPFHRANSAC::FPFHRANSAC(FPFHRANSACParameters parameters)
   }
 }
 
-json FPFHRANSAC::GetParameters() const {
+json FPFHTEASER::GetParameters() const {
   json retval = parameters_;
   return retval;
 }
 
-void FPFHRANSAC::SetParameters(const json &parameters) {
-  parameters_ = parameters.template get<FPFHRANSACParameters>();
+void FPFHTEASER::SetParameters(const json &parameters) {
+  parameters_ = parameters.template get<FPFHTEASERParameters>();
 
   if (parameters_.response_method < 1 or parameters_.response_method > 5) {
     spdlog::warn("Corner response method must be in the range 1-5 (Harris, "
@@ -75,7 +74,7 @@ void FPFHRANSAC::SetParameters(const json &parameters) {
   }
 }
 
-void FPFHRANSAC::DetectAndDescribeKeypoints(const PointCloud::Ptr input,
+void FPFHTEASER::DetectAndDescribeKeypoints(const PointCloud::Ptr input,
                                             PointCloud::Ptr keypoints,
                                             FeatureCloud::Ptr features) const {
 
@@ -129,7 +128,7 @@ void FPFHRANSAC::DetectAndDescribeKeypoints(const PointCloud::Ptr input,
   spdlog::debug("Feature computation took {} s", CalculateTimeSince(timer));
 }
 
-void FPFHRANSAC::ExtractInlierKeypoints(
+void FPFHTEASER::ExtractInlierKeypoints(
     const PointCloud::Ptr map1_pcd, const PointCloud::Ptr map2_pcd,
     const pcl::CorrespondencesPtr correspondences, PointCloud::Ptr map1_inliers,
     PointCloud::Ptr map2_inliers) const {
@@ -146,7 +145,7 @@ void FPFHRANSAC::ExtractInlierKeypoints(
   }
 }
 
-HypothesisPtr FPFHRANSAC::RegisterPointCloudMaps(const PointCloud::Ptr map1_pcd,
+HypothesisPtr FPFHTEASER::RegisterPointCloudMaps(const PointCloud::Ptr map1_pcd,
                                                  const PointCloud::Ptr map2_pcd,
                                                  json &stats) const {
 
@@ -191,49 +190,87 @@ HypothesisPtr FPFHRANSAC::RegisterPointCloudMaps(const PointCloud::Ptr map1_pcd,
   pcl::registration::CorrespondenceRejectorOneToOne rejector_one_to_one;
   rejector_one_to_one.setInputCorrespondences(correspondences);
   rejector_one_to_one.getCorrespondences(*correspondences_one_to_one);
-  spdlog::debug("One-to-one rejection complete");
+  spdlog::debug("One-to-one rejection complete. Count: {}",
+                correspondences_one_to_one->size());
 
-  // Correspondance rejection with RANSAC
-  pcl::registration::CorrespondenceRejectorSampleConsensus<PointT>
-      rejector_ransac;
-  pcl::CorrespondencesPtr correspondences_inlier(new pcl::Correspondences);
-  rejector_ransac.setInlierThreshold(parameters_.ransac_inlier_threshold);
-  rejector_ransac.setRefineModel(parameters_.ransac_refine_model);
+  // Extract selected keypoints
+  PointCloud::Ptr map1_inliers(new PointCloud), map2_inliers(new PointCloud);
+  ExtractInlierKeypoints(map1_keypoints, map2_keypoints,
+                         correspondences_one_to_one, map1_inliers,
+                         map2_inliers);
 
-  rejector_ransac.setInputSource(map2_keypoints);
-  rejector_ransac.setInputTarget(map1_keypoints);
-  rejector_ransac.setInputCorrespondences(correspondences_one_to_one);
-  rejector_ransac.getCorrespondences(*correspondences_inlier);
-  Eigen::Matrix4f transform = rejector_ransac.getBestTransformation();
+  // Registration with TEASER++
+  HypothesisPtr result(new Hypothesis());
+
+  {
+    // Convert to Eigen
+    size_t N = map1_inliers->size();
+    Eigen::Matrix<double, 3, Eigen::Dynamic> pcd1eig(3, N), pcd2eig(3, N);
+    for (size_t i = 0; i < N; ++i) {
+      const PointT &pt1 = map1_inliers->points[i],
+                   pt2 = map2_inliers->points[i];
+      pcd1eig.col(i) << pt1.x, pt1.y, pt1.z;
+      pcd2eig.col(i) << pt2.x, pt2.y, pt2.z;
+    }
+
+    teaser::RobustRegistrationSolver::Params params;
+    params.noise_bound = parameters_.teaser_noise_bound;
+    params.cbar2 = 1;
+    params.estimate_scaling = false;
+    params.rotation_max_iterations = 100;
+    params.rotation_gnc_factor = 1.4;
+    params.rotation_estimation_algorithm =
+        teaser::RobustRegistrationSolver::ROTATION_ESTIMATION_ALGORITHM::QUATRO;
+    params.rotation_cost_threshold = 0.0002;
+    params.inlier_selection_mode =
+        teaser::RobustRegistrationSolver::INLIER_SELECTION_MODE::PMC_HEU;
+    auto solver = std::make_unique<teaser::RobustRegistrationSolver>(params);
+
+    // Disable verbose output to stdout
+    if (!parameters_.teaser_verbose)
+      std::cout.setstate(std::ios_base::failbit);
+    teaser::RegistrationSolution solution = solver->solve(pcd2eig, pcd1eig);
+    std::cout.clear();
+
+    // Construct solution
+    result->inlier_points_1 = PointCloud::Ptr(new PointCloud());
+    result->inlier_points_2 = PointCloud::Ptr(new PointCloud());
+
+    std::vector<int> inlier_mask = solver->getInlierMaxClique();
+    for (const auto &idx : inlier_mask) {
+      const auto &pt1 = map1_inliers->points[idx],
+                 &pt2 = map2_inliers->points[idx];
+      result->inlier_points_1->push_back(pt1);
+      result->inlier_points_2->push_back(pt2);
+    }
+
+    result->n_inliers = result->inlier_points_1->size();
+    result->x = solution.translation.x();
+    result->y = solution.translation.y();
+    result->z = solution.translation.z();
+
+    Eigen::Matrix4d solution_mat = Eigen::Matrix4d::Identity();
+    solution_mat.topLeftCorner(3, 3) = solution.rotation;
+    solution_mat.topRightCorner(3, 1) = solution.translation;
+    result->pose = solution_mat;
+
+    Eigen::Vector3d eulAng = solution.rotation.eulerAngles(2, 1, 0);
+
+    // Identify if the rotation axis is pointing downwards. In that case, the
+    // rotation will be pi rad apart
+    Eigen::AngleAxisd angle_axis(solution.rotation);
+    if (angle_axis.axis()(2) < 0.0)
+      result->theta = eulAng(0) - M_PI;
+    else
+      result->theta = eulAng(0);
+  }
 
   stats["t_pose_estimation"] = CalculateTimeSince(indiv);
+  stats["t_total"] = CalculateTimeSince(total);
+
   spdlog::debug("Pose estimation completed in {}. Num. inliers: {}",
                 stats["t_pose_estimation"].template get<double>(),
-                correspondences_inlier->size());
-
-  // Extract inliers
-  PointCloud::Ptr map1_inliers(new PointCloud), map2_inliers(new PointCloud);
-  ExtractInlierKeypoints(map1_keypoints, map2_keypoints, correspondences_inlier,
-                         map1_inliers, map2_inliers);
-
-  // Construct result
-  HypothesisPtr result(new Hypothesis);
-  result->n_inliers = correspondences_inlier->size();
-  result->x = transform(0, 3);
-  result->y = transform(1, 3);
-  result->z = transform(2, 3);
-
-  Eigen::Matrix3f rotm = transform.block<3, 3>(0, 0);
-  Eigen::AngleAxisf axang(rotm);
-  float angle = axang.angle() * axang.axis()(2);
-  result->theta = angle;
-  result->pose = ConstructTransformFromParameters(result->x, result->y,
-                                                  result->z, result->theta);
-
-  result->inlier_points_1 = map1_inliers;
-  result->inlier_points_2 = map2_inliers;
-
-  stats["t_total"] = CalculateTimeSince(total);
+                result->n_inliers);
 
   // Measure memory use
   stats["mem_cpu"] = GetPeakRSS();
@@ -245,7 +282,7 @@ HypothesisPtr FPFHRANSAC::RegisterPointCloudMaps(const PointCloud::Ptr map1_pcd,
   return result;
 }
 
-void FPFHRANSAC::VisualizeKeypoints(const PointCloud::Ptr points,
+void FPFHTEASER::VisualizeKeypoints(const PointCloud::Ptr points,
                                     const PointCloud::Ptr keypoints) const {
 
   pcl::visualization::PCLVisualizer viewer("Keypoints");

@@ -8,6 +8,7 @@
 #include <sstream>
 #include <tomographic_map_matching/consensus.hpp>
 #include <tomographic_map_matching/fpfh_ransac.hpp>
+#include <tomographic_map_matching/fpfh_teaser.hpp>
 #include <tomographic_map_matching/map_matcher_base.hpp>
 #include <tomographic_map_matching/orb_teaser.hpp>
 
@@ -147,21 +148,21 @@ int main(int argc, char **argv) {
   // TODO: Perhaps a better structure to initialize from a single class?
   std::unique_ptr<map_matcher::MapMatcherBase> matcher;
   if (parameters_json["algorithm"] == 0) { // Consensus
-    spdlog::info("Algorithm: Consensus");
     auto parameters =
         parameters_json.template get<map_matcher::ConsensusParameters>();
     matcher = std::make_unique<map_matcher::Consensus>(parameters);
   } else if (parameters_json["algorithm"] == 1) {
-    spdlog::info("Algorithm: ORB-TEASER");
     auto parameters =
         parameters_json.template get<map_matcher::ORBTEASERParameters>();
     matcher = std::make_unique<map_matcher::ORBTEASER>(parameters);
   } else if (parameters_json["algorithm"] == 2) {
-    spdlog::info("Algorithm: FPFH-RANSAC");
     auto parameters =
         parameters_json.template get<map_matcher::FPFHRANSACParameters>();
     matcher = std::make_unique<map_matcher::FPFHRANSAC>(parameters);
-
+  } else if (parameters_json["algorithm"] == 3) {
+    auto parameters =
+        parameters_json.template get<map_matcher::FPFHTEASERParameters>();
+    matcher = std::make_unique<map_matcher::FPFHTEASER>(parameters);
   } else {
     auto algorithm_idx = parameters_json["algorithm"].template get<int>();
     spdlog::critical("Algorithm {} is not implemented", algorithm_idx);
@@ -169,11 +170,13 @@ int main(int argc, char **argv) {
   }
 
   // Pretty-print parameters
-  {
+  if (FLAGS_debug) {
     std::stringstream params_str;
     params_str << matcher->GetParameters().dump(2);
     spdlog::info("Parameters: {}", params_str.str());
   }
+
+  spdlog::info("Algorithm: {}", matcher->GetName());
 
   // Check data file
   json data_config;
@@ -188,13 +191,10 @@ int main(int argc, char **argv) {
                data_config["pairs"].size());
 
   // Output file
-  std::filesystem::path
-      output_file_folder =
-          parameter_config_file_path.parent_path().parent_path() / "results",
-      output_file_path =
-          output_file_folder /
-          std::filesystem::path(parameter_config_file_path.stem().string() +
-                                "-run-" + time_string + ".json");
+  std::filesystem::path output_file_folder("/results/consensus");
+  std::filesystem::path output_file_path =
+      output_file_folder /
+      std::filesystem::path(matcher->GetName() + "-" + time_string + ".json");
 
   if (!std::filesystem::exists(output_file_folder)) {
     std::filesystem::create_directory(output_file_folder);
@@ -279,9 +279,7 @@ int main(int argc, char **argv) {
 
     if (result->n_inliers == 0) {
       spdlog::error("Map matching unsuccessful");
-
     } else {
-
       stats["result_x"] = result->x;
       stats["result_y"] = result->y;
       stats["result_z"] = result->z;
