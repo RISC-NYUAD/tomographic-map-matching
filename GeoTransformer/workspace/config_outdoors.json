@@ -1,0 +1,121 @@
+{
+    "model_directory": "/usr/local/src/GeoTransformer/experiments/geotransformer.kitti.stage5.gse.k3.max.oacl.stage2.sinkhorn",
+    "weights": "/weights/geotransformer-kitti.pth.tar",
+    "neighbor_limits": [10, 10, 10, 10, 10],
+    "seed": 7351,
+    "working_dir": ".",
+    "root_dir": ".",
+    "exp_name": "outdoors",
+    "output_dir": "./output/outdoors",
+    "snapshot_dir": "./output/outdoors/snapshots",
+    "log_dir": "./output/outdoors/logs",
+    "event_dir": "./output/outdoors/events",
+    "feature_dir": "./output/outdoors/features",
+    "data": {
+        "dataset_root": "Kitti"
+    },
+    "train": {
+        "batch_size": 1,
+        "num_workers": 8,
+        "point_limit": 30000,
+        "use_augmentation": true,
+        "augmentation_noise": 0.01,
+        "augmentation_min_scale": 0.8,
+        "augmentation_max_scale": 1.2,
+        "augmentation_shift": 2,
+        "augmentation_rotation": 1
+    },
+    "test": {
+        "batch_size": 1,
+        "num_workers": 8,
+        "point_limit": null
+    },
+    "eval": {
+        "acceptance_overlap": 0,
+        "acceptance_radius": 1,
+        "inlier_ratio_threshold": 0.05,
+        "rre_threshold": 5,
+        "rte_threshold": 2
+    },
+    "ransac": {
+        "distance_threshold": 0.3,
+        "num_points": 4,
+        "num_iterations": 50000
+    },
+    "optim": {
+        "lr": 0.0001,
+        "lr_decay": 0.95,
+        "lr_decay_steps": 4,
+        "weight_decay": 0.000001,
+        "max_epoch": 160,
+        "grad_acc_steps": 1
+    },
+    "backbone": {
+        "num_stages": 5,
+        "init_voxel_size": 1.0,
+        "kernel_size": 15,
+        "base_radius": 4.25,
+        "base_sigma": 2,
+        "init_radius": 4.25,
+        "init_sigma": 2.0,
+        "group_norm": 32,
+        "input_dim": 1,
+        "init_dim": 64,
+        "output_dim": 256
+    },
+    "model": {
+        "ground_truth_matching_radius": 0.6,
+        "num_points_in_patch": 128,
+        "num_sinkhorn_iterations": 100
+    },
+    "coarse_matching": {
+        "num_targets": 128,
+        "overlap_threshold": 0.1,
+        "num_correspondences": 256,
+        "dual_normalization": true
+    },
+    "geotransformer": {
+        "input_dim": 2048,
+        "hidden_dim": 128,
+        "output_dim": 256,
+        "num_heads": 4,
+        "blocks": [
+            "self",
+            "cross",
+            "self",
+            "cross",
+            "self",
+            "cross"
+        ],
+        "sigma_d": 4.8,
+        "sigma_a": 15,
+        "angle_k": 3,
+        "reduction_a": "max"
+    },
+    "fine_matching": {
+        "topk": 2,
+        "acceptance_radius": 0.6,
+        "mutual": true,
+        "confidence_threshold": 0.05,
+        "use_dustbin": false,
+        "use_global_score": false,
+        "correspondence_threshold": 3,
+        "correspondence_limit": null,
+        "num_refinement_steps": 5
+    },
+    "coarse_loss": {
+        "positive_margin": 0.1,
+        "negative_margin": 1.4,
+        "positive_optimal": 0.1,
+        "negative_optimal": 1.4,
+        "log_scale": 40,
+        "positive_overlap": 0.1
+    },
+    "fine_loss": {
+        "positive_radius": 0.6
+    },
+    "loss": {
+        "weight_coarse_loss": 1,
+        "weight_fine_loss": 1
+    }
+}

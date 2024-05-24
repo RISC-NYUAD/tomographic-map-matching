@@ -1,10 +1,5 @@
-# Change to experiment directory for additional scripts
-model_directory = "/usr/local/src/GeoTransformer/experiments/geotransformer.3dmatch.stage4.gse.k3.max.oacl.stage2.sinkhorn"
-
+# KITTI and 3DMatch have the same model, more or less
 import sys
-
-sys.path.insert(1, model_directory)
-
 import argparse
 import json
 import os
@@ -16,6 +11,7 @@ import torch
 import numpy as np
 import open3d as o3d
 from scipy.spatial.transform import Rotation
+from easydict import EasyDict
 
 from geotransformer.utils.data import registration_collate_fn_stack_mode
 from geotransformer.utils.torch import to_cuda, release_cuda
@@ -25,9 +21,6 @@ from geotransformer.utils.open3d import (
     get_color,
     draw_geometries,
 )
-
-from config import make_cfg
-from model import create_model
 
 
 p = psutil.Process()
@@ -39,7 +32,9 @@ def make_parser():
         "--data_config", required=True, help="Path to JSON file that denotes pairs"
     )
     parser.add_argument(
-        "--grid_size", type=float, default=0.1, help="Grid size for KPConv backend"
+        "--parameter_config",
+        required=True,
+        help="Path to JSON file that stores configuration",
     )
     parser.add_argument("--visualize", action="store_true")
     return parser
@@ -79,10 +74,9 @@ def load_data(src_file, ref_file):
 def main():
     parser = make_parser()
     args = parser.parse_args()
-    cfg = make_cfg()
-    cfg.backbone.init_voxel_size = args.grid_size
 
-    neighbor_limits = [38, 36, 36, 38]  # default setting in 3DMatch
+    with open(args.parameter_config, "r") as f:
+        cfg = EasyDict(json.load(f))
 
     # Load data config
     with open(args.data_config, "r") as f:
@@ -93,16 +87,18 @@ def main():
     )
 
     # prepare model
+    sys.path.append(cfg.model_directory)
+
+    from model import create_model
+
     model = create_model(cfg).cuda()
-    state_dict = torch.load("/weights/geotransformer-3dmatch.pth.tar")
+    state_dict = torch.load(cfg.weights)
     model.load_state_dict(state_dict["model"])
 
     # JSON to store results
     output_data = {
         "data_config": args.data_config,
-        "full_configuration": {
-            "grid_size": cfg.backbone.init_voxel_size,
-        },
+        "full_configuration": dict(cfg),
         "results": [],
     }
 
@@ -169,7 +165,7 @@ def main():
                 cfg.backbone.num_stages,
                 cfg.backbone.init_voxel_size,
                 cfg.backbone.init_radius,
-                neighbor_limits,
+                cfg.neighbor_limits,
             )
 
             data_dict = to_cuda(data_dict)
