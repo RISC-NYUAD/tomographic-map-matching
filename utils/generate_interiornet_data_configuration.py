@@ -50,8 +50,11 @@ def main():
         file_name = f"gsize{grid_size}-noise{noise_level}".replace(".", "-") + ".json"
         file_path = os.path.join(args.output, file_name)
 
+        print("Full config:")
+        print(json.dumps(config_dict, indent=2))
+
         with open(file_path, "w") as f:
-            json.dump(config_dict, f)
+            json.dump(config_dict, f, indent=2)
 
 
 if __name__ == "__main__":
