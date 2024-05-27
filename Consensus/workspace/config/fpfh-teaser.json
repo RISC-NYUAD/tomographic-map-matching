@@ -1,0 +1,6 @@
+{
+    "algorithm": 3,
+    "normal_radius": 0.3,
+    "keypoint_radius": 0.2,
+    "descriptor_radius": 0.5
+}
