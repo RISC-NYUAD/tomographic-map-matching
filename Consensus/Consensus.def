@@ -1,18 +1,24 @@
 Bootstrap: docker
 From: ubuntu:22.04
 
+%setup
+    mkdir ${SINGULARITY_ROOTFS}/workspace
+
 %environment
     export LD_LIBRARY_PATH=/usr/local/lib
 
 %files
     Consensus/estimateRigid2D.patch /usr/local/src/estimateRigid2D.patch
+    Consensus/workspace/src /usr/local/src/code/src
+    Consensus/workspace/include /usr/local/src/code/include
+    Consensus/workspace/CMakeLists.txt /usr/local/src/code/CMakeLists.txt
 
 %post
     export DEBIAN_FRONTEND=noninteractive
 
     # GUI tools, dev tools etc.
     apt-get update
-    apt-get install --no-install-recommends -y git libgl1 libgomp1 mesa-utils wget build-essential cmake libspdlog-dev libgflags-dev nlohmann-json3-dev tzdata
+    apt-get install --no-install-recommends -y git libgl1 libgomp1 mesa-utils wget build-essential cmake libspdlog-dev libgflags-dev nlohmann-json3-dev tzdata gdb
     apt-get clean
 
     cd /usr/local/src
@@ -77,9 +83,12 @@ From: ubuntu:22.04
     -DBUILD_WITH_MARCH_NATIVE=ON ..
     make -j8 install
 
-    # Workspace to mount CWD / other places
-    mkdir /workspace
+    # Build
+    cd /usr/local/src/code
+    mkdir build && cd build
+    cmake -DCMAKE_BUILD_TYPE=Release ..
+    make -j8
 
 %runscript
     cd /workspace
-    exec /bin/bash
+    /usr/local/src/code/build/tomographic_map_matching_app $*

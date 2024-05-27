@@ -170,11 +170,9 @@ int main(int argc, char **argv) {
   }
 
   // Pretty-print parameters
-  if (FLAGS_debug) {
-    std::stringstream params_str;
-    params_str << matcher->GetParameters().dump(2);
-    spdlog::info("Parameters: {}", params_str.str());
-  }
+  std::stringstream params_str;
+  params_str << matcher->GetParameters().dump(2);
+  spdlog::info("Parameters: {}", params_str.str());
 
   spdlog::info("Algorithm: {}", matcher->GetName());
 
@@ -191,7 +189,7 @@ int main(int argc, char **argv) {
                data_config["pairs"].size());
 
   // Output file
-  std::filesystem::path output_file_folder("/results/consensus");
+  std::filesystem::path output_file_folder("/results");
   std::filesystem::path output_file_path =
       output_file_folder /
       std::filesystem::path(matcher->GetName() + "-" + time_string + ".json");
