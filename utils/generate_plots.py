@@ -1,5 +1,5 @@
 import json
-import matplotlib
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import os
 import math
@@ -46,15 +46,18 @@ def colorize_boxplot(boxplot, colors):
         plt.setp(boxplot["medians"][idx], color="k")
 
 
-def plot_category(data, subplot, colors, groups, ylabel, hline=None):
+def plot_category(data, subplot, colors, groups, ylabel, hline=None, lims=None):
     # Number of individual algorithms to be displayed
     num_units = len(data) // len(groups)
     positions = []
+    label_positions = []
     vline_locations = []
     gap = 1
 
     for i in range(len(groups)):
-        positions += [i * (num_units + gap) + j + 1 for j in range(num_units)]
+        group_positions = [i * (num_units + gap) + j + 1 for j in range(num_units)]
+        positions += group_positions
+        label_positions += [(group_positions[0] + group_positions[-1]) / 2]
 
         if i != len(groups) - 1:
             vline_locations.append(positions[-1] + gap)
@@ -79,10 +82,15 @@ def plot_category(data, subplot, colors, groups, ylabel, hline=None):
     if hline is not None:
         subplot.axhline(hline, linestyle="--", color="r", linewidth=1)
 
+    # Mark groups with ticks
+    subplot.set_xticks(label_positions, [f"σ = {elem}" for elem in groups])
+
     # Other modifications
+    if lims is not None:
+        subplot.set_ylim(bottom=lims[0], top=lims[1])
+
     subplot.set_title(ylabel)
     subplot.grid(axis="y", which="both")
-    subplot.set_xticks([])
     subplot.set_yscale("log")
     subplot.minorticks_on()
 
@@ -106,6 +114,7 @@ def generate_plot(results_data, names, colors):
     # Collect all noises side-by-side
     plot_data = {category: [] for category in categories}
     noise_levels = ["0.00", "0.02", "0.05"]
+    # noise_levels = ["0.00"]
 
     for noise_level in noise_levels:
         plot_data["error_position"] += extract_data_category(
@@ -122,10 +131,30 @@ def generate_plot(results_data, names, colors):
         )
 
     # Figure
-    figure = plt.figure(figsize=[16, 16], tight_layout=True)
-    limits = [0.05 * 5, 0.174533, None, None]
+    thresholds = [0.05 * 5, 0.174533, 60, 8e9]
+    limits = [(1e-3, 4e1), (9e-6, 4e0), None, None]
 
-    plot_dict = {"subplots": [figure.add_subplot(2, 2, i + 1) for i in range(4)]}
+    # plot_dict = {"subplots": [figure.add_subplot(1, 4, i + 1) for i in range(4)]}
+    # plot_dict["boxplots"] = [
+    #     plot_category(
+    #         plot_data[categories[i]],
+    #         plot_dict["subplots"][i],
+    #         colors,
+    #         noise_levels,
+    #         titles[i],
+    #         limits[i],
+    #     )
+    #     for i in range(len(categories))
+    # ]
+
+    plot_dict = {
+        "figures": [plt.figure(figsize=[9, 4], tight_layout=True) for i in range(4)]
+    }
+
+    plot_dict["subplots"] = [
+        plot_dict["figures"][i].add_subplot(1, 1, 1) for i in range(4)
+    ]
+
     plot_dict["boxplots"] = [
         plot_category(
             plot_data[categories[i]],
@@ -133,13 +162,14 @@ def generate_plot(results_data, names, colors):
             colors,
             noise_levels,
             titles[i],
+            thresholds[i],
             limits[i],
         )
-        for i in range(len(categories))
+        for i in range(4)
     ]
 
     # Shrink plots to make space
-    padding = 0.04
+    padding = 0.1
     for subplot in plot_dict["subplots"]:
         box = subplot.get_position()
         subplot.set_position(
@@ -147,16 +177,28 @@ def generate_plot(results_data, names, colors):
         )
 
     # Legend
-    figure.legend(
-        handles=plot_dict["boxplots"][0]["boxes"][: len(names)],
-        labels=names,
-        ncol=9,
-        loc="lower center",
-        mode="expand",
-    )
+    # figure.legend(
+    #     handles=plot_dict["boxplots"][0]["boxes"][: len(names)],
+    #     labels=names,
+    #     ncol=9,
+    #     loc="lower center",
+    #     mode="expand",
+    # )
+    for i, figure in enumerate(plot_dict["figures"]):
+        figure.legend(
+            handles=plot_dict["boxplots"][0]["boxes"][: len(names)],
+            labels=names,
+            ncol=5,
+            loc="lower center",
+            mode="expand",
+        )
+        figure.savefig(f"figures/{categories[i]}.pdf", format="pdf")
 
     # Display
-    plt.show()
+    # Keeps reverting settings after show. Display rendered image instead
+    # plt.show()
+
+    # plt.show()
 
 
 def main():
