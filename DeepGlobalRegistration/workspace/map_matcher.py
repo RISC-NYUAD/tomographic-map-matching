@@ -111,7 +111,11 @@ def main():
     print(" | Start processing...")
     print()
 
-    for pair in data_config["pairs"]:
+    # Duplicate first instance to allow initializing the model.
+    # The reported timing appears to be wrong otherwise
+    data_config["pairs"].insert(0, data_config["pairs"][0])
+
+    for idx, pair in enumerate(data_config["pairs"]):
         # Reset GPU memory usage between pairs
         torch.cuda.reset_peak_memory_stats()
 
@@ -156,6 +160,11 @@ def main():
 
             # compute error
             rte, rre = compute_error(tf, tf_est)
+            # If the error here is the floating point precision, report yaw error instead
+            if rre < 1e-7:
+                print(f" | >> Error too small: rre:{rre}")
+                rre = abs(theta_est - theta)
+
             stats["error_position"] = rte
             stats["error_angle"] = rre
 
@@ -169,12 +178,13 @@ def main():
             stats["mem_cpu"] = p.memory_info().rss
             stats["mem_gpu"] = torch.cuda.max_memory_allocated()
 
-            # Save results after each run
-            output_data["results"].append(stats)
-            with open(output_file, "w") as f:
-                json.dump(output_data, f, indent=2)
-            print()
+            if idx != 0:
+                # Save results after each run
+                output_data["results"].append(stats)
+                with open(output_file, "w") as f:
+                    json.dump(output_data, f, indent=2)
 
+            print()
             torch.cuda.empty_cache()
 
     print(" | Completed!")

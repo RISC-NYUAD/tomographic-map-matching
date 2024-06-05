@@ -187,8 +187,12 @@ def main():
     print(f" | Start processing...")
     print()
 
+    # Duplicate first instance to allow initializing the model.
+    # The reported timing appears to be wrong otherwise
+    data_config["pairs"].insert(0, data_config["pairs"][0])
+
     # Process and collate pair
-    for pair in data_config["pairs"]:
+    for idx, pair in enumerate(data_config["pairs"]):
         # Reset GPU memory usage data statistics to eliminate any leak
         torch.cuda.reset_peak_memory_stats()
 
@@ -272,10 +276,12 @@ def main():
             stats["mem_cpu"] = p.memory_info().rss
             stats["mem_gpu"] = torch.cuda.max_memory_allocated()
 
-            # Save results after each run
-            output_data["results"].append(stats)
-            with open(output_file, "w") as f:
-                json.dump(output_data, f, indent=2)
+            if idx != 0:
+                # Save results after each run
+                output_data["results"].append(stats)
+                with open(output_file, "w") as f:
+                    json.dump(output_data, f, indent=2)
+
             print()
 
             torch.cuda.empty_cache()
