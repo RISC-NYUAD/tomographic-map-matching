@@ -7,6 +7,7 @@ import json
 import os
 import time
 import psutil
+import gc
 
 import numpy as np
 import open3d as o3d
@@ -50,7 +51,7 @@ def downsample_and_shuffle(pcd, voxel_size, max_size=0):
     pts = np.array(downsampled.points)
     np.random.shuffle(pts)
 
-    if max_size > 0:
+    if max_size > 0 and pts.shape[0] > max_size:
         idx = np.random.choice(range(pts.shape[0]), max_size, replace=False)
         pts = pts[idx]
 
@@ -248,8 +249,14 @@ def main():
                     f" | Result x: {tf_est[0, 3]: .5f} y: {tf_est[1, 3]: .5f} z: {tf_est[2, 3]: .5f}, t: {theta_est: .5f}"
                 )
 
-                # # compute error
+                # compute error
                 rte, rre = compute_error(tf, tf_est)
+
+                # If the error here is the floating point precision, report yaw error instead
+                if rre < 1e-7:
+                    print(f" | >> Error too small: rre:{rre}")
+                    rre = abs(theta_est - theta)
+
                 stats["error_position"] = rte
                 stats["error_angle"] = rre
 
@@ -272,6 +279,7 @@ def main():
             print()
 
             torch.cuda.empty_cache()
+            gc.collect()
 
     print(" | Completed!")
 

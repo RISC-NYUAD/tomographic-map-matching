@@ -9,6 +9,7 @@ mkdir -p results/$PKG
 mkdir -p weights/$PKG
 
 singularity exec --nv --no-home \
+    --bind $PKG/workspace:/workspace \
     --bind tmp_home:$HOME \
     --bind weights/$PKG:/weights \
     --bind results/$PKG:/results \
