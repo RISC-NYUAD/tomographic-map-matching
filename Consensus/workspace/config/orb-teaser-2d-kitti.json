@@ -1,0 +1,6 @@
+{
+    "algorithm": 1,
+    "grid_size": 0.5,
+    "slice_height": 0.5,
+    "cross_match": true
+}

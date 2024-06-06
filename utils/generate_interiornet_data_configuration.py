@@ -17,7 +17,7 @@ def main():
     parser.add_argument(
         "--output",
         type=str,
-        default="data_config",
+        default="data-config",
         help="Folder name to generate the configurations",
     )
     parser.add_argument(
