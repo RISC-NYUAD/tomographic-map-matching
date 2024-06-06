@@ -89,7 +89,7 @@ def plot_category(data, subplot, colors, groups, ylabel, hline=None, lims=None):
     if lims is not None:
         subplot.set_ylim(bottom=lims[0], top=lims[1])
 
-    subplot.set_title(ylabel)
+    subplot.set_ylabel(ylabel)
     subplot.grid(axis="y", which="both")
     subplot.set_yscale("log")
     subplot.minorticks_on()
@@ -97,7 +97,7 @@ def plot_category(data, subplot, colors, groups, ylabel, hline=None, lims=None):
     return boxplot
 
 
-def generate_plot(results_data, names, colors):
+def generate_plot(results_data, names, colors, title):
     """Generate the box plots for a particular grid size
     results_data must be a dict one level after the data category
     (e.g. g0.05 within InteriorNet)
@@ -132,23 +132,15 @@ def generate_plot(results_data, names, colors):
 
     # Figure
     thresholds = [0.05 * 5, 0.174533, 60, 8e9]
-    limits = [(1e-3, 4e1), (9e-6, 4e0), None, None]
+    limits = [None, None, None, None]
 
-    # plot_dict = {"subplots": [figure.add_subplot(1, 4, i + 1) for i in range(4)]}
-    # plot_dict["boxplots"] = [
-    #     plot_category(
-    #         plot_data[categories[i]],
-    #         plot_dict["subplots"][i],
-    #         colors,
-    #         noise_levels,
-    #         titles[i],
-    #         limits[i],
-    #     )
-    #     for i in range(len(categories))
-    # ]
+    tight_layout_params = {"pad": 1.00, "rect": (0, 0, 0.72, 1)}
 
     plot_dict = {
-        "figures": [plt.figure(figsize=[9, 4], tight_layout=True) for i in range(4)]
+        "figures": [
+            plt.figure(figsize=[8, 3], tight_layout=tight_layout_params)
+            for i in range(4)
+        ]
     }
 
     plot_dict["subplots"] = [
@@ -168,36 +160,17 @@ def generate_plot(results_data, names, colors):
         for i in range(4)
     ]
 
-    # Shrink plots to make space
-    padding = 0.1
-    for subplot in plot_dict["subplots"]:
-        box = subplot.get_position()
-        subplot.set_position(
-            pos=[box.x0, box.y0 - padding, box.width, box.height + padding]
-        )
-
-    # Legend
-    # figure.legend(
-    #     handles=plot_dict["boxplots"][0]["boxes"][: len(names)],
-    #     labels=names,
-    #     ncol=9,
-    #     loc="lower center",
-    #     mode="expand",
-    # )
     for i, figure in enumerate(plot_dict["figures"]):
         figure.legend(
             handles=plot_dict["boxplots"][0]["boxes"][: len(names)],
             labels=names,
-            ncol=5,
-            loc="lower center",
-            mode="expand",
+            labelspacing=1.0,
+            loc="right",
         )
-        figure.savefig(f"figures/{categories[i]}.pdf", format="pdf")
+        figure.savefig(f"figures/{title}-{categories[i]}.pdf", format="pdf")
 
     # Display
     # Keeps reverting settings after show. Display rendered image instead
-    # plt.show()
-
     # plt.show()
 
 
@@ -231,141 +204,66 @@ def main():
     # File correspondences
     root_folder = "results"
 
-    # InteriorNet
+    # fmt: off
     raw_data = {
         "InteriorNet": {
             "g0.05": {
                 "Consensus": {
-                    "0.00": os.path.join(
-                        root_folder, "Consensus", "Consensus-2024-05-27-16-09-41.json"
-                    ),
-                    "0.02": os.path.join(
-                        root_folder, "Consensus", "Consensus-2024-05-27-16-10-02.json"
-                    ),
-                    "0.05": os.path.join(
-                        root_folder, "Consensus", "Consensus-2024-05-27-16-11-34.json"
-                    ),
+                    "0.00": os.path.join(root_folder, "Consensus", "Consensus-2024-05-27-16-09-41.json"),
+                    "0.02": os.path.join(root_folder, "Consensus", "Consensus-2024-05-27-16-10-02.json"),
+                    "0.05": os.path.join(root_folder, "Consensus", "Consensus-2024-05-27-16-11-34.json"),
                 },
                 "FPFH-RANSAC": {
-                    "0.00": os.path.join(
-                        root_folder, "Consensus", "FPFH-RANSAC-2024-05-27-16-13-44.json"
-                    ),
-                    "0.02": os.path.join(
-                        root_folder, "Consensus", "FPFH-RANSAC-2024-05-27-16-14-19.json"
-                    ),
-                    "0.05": os.path.join(
-                        root_folder, "Consensus", "FPFH-RANSAC-2024-05-27-16-26-34.json"
-                    ),
+                    "0.00": os.path.join(root_folder, "Consensus", "FPFH-RANSAC-2024-05-27-16-13-44.json"),
+                    "0.02": os.path.join(root_folder, "Consensus", "FPFH-RANSAC-2024-05-27-16-14-19.json"),
+                    "0.05": os.path.join(root_folder, "Consensus", "FPFH-RANSAC-2024-05-27-16-26-34.json"),
                 },
                 "FPFH-TEASER++": {
-                    "0.00": os.path.join(
-                        root_folder, "Consensus", "FPFH-TEASER-2024-05-27-16-50-55.json"
-                    ),
-                    "0.02": os.path.join(
-                        root_folder, "Consensus", "FPFH-TEASER-2024-05-27-16-51-30.json"
-                    ),
-                    "0.05": os.path.join(
-                        root_folder, "Consensus", "FPFH-TEASER-2024-05-27-17-03-44.json"
-                    ),
+                    "0.00": os.path.join(root_folder, "Consensus", "FPFH-TEASER-2024-05-27-16-50-55.json"),
+                    "0.02": os.path.join(root_folder, "Consensus", "FPFH-TEASER-2024-05-27-16-51-30.json"),
+                    "0.05": os.path.join(root_folder, "Consensus", "FPFH-TEASER-2024-05-27-17-03-44.json"),
                 },
                 "Tomographic-TEASER++": {
-                    "0.00": os.path.join(
-                        root_folder, "Consensus", "ORB-TEASER-2024-05-27-17-28-04.json"
-                    ),
-                    "0.02": os.path.join(
-                        root_folder, "Consensus", "ORB-TEASER-2024-05-27-17-28-54.json"
-                    ),
-                    "0.05": os.path.join(
-                        root_folder, "Consensus", "ORB-TEASER-2024-05-27-17-31-17.json"
-                    ),
+                    "0.00": os.path.join(root_folder, "Consensus", "ORB-TEASER-2024-05-27-17-28-04.json"),
+                    "0.02": os.path.join(root_folder, "Consensus", "ORB-TEASER-2024-05-27-17-28-54.json"),
+                    "0.05": os.path.join(root_folder, "Consensus", "ORB-TEASER-2024-05-27-17-31-17.json"),
                 },
                 "ORB-TEASER++": {
-                    "0.00": os.path.join(
-                        root_folder, "Consensus", "ORB-TEASER-2024-05-27-17-34-04.json"
-                    ),
-                    "0.02": os.path.join(
-                        root_folder, "Consensus", "ORB-TEASER-2024-05-27-17-34-54.json"
-                    ),
-                    "0.05": os.path.join(
-                        root_folder, "Consensus", "ORB-TEASER-2024-05-27-17-36-36.json"
-                    ),
+                    "0.00": os.path.join(root_folder, "Consensus", "ORB-TEASER-2024-05-27-17-34-04.json"),
+                    "0.02": os.path.join(root_folder, "Consensus", "ORB-TEASER-2024-05-27-17-34-54.json"),
+                    "0.05": os.path.join(root_folder, "Consensus", "ORB-TEASER-2024-05-27-17-36-36.json"),
                 },
                 "BUFFER": {
-                    "0.00": os.path.join(
-                        root_folder,
-                        "BUFFER",
-                        "buffer_interiornet_gsize0-05-noise0-00_2024-05-26-19-00-24.json",
-                    ),
-                    "0.02": os.path.join(
-                        root_folder,
-                        "BUFFER",
-                        "buffer_interiornet_gsize0-05-noise0-02_2024-05-26-19-01-22.json",
-                    ),
-                    "0.05": os.path.join(
-                        root_folder,
-                        "BUFFER",
-                        "buffer_interiornet_gsize0-05-noise0-05_2024-05-26-19-03-47.json",
-                    ),
+                    "0.00": os.path.join(root_folder, "BUFFER", "buffer_interiornet_gsize0-05-noise0-00_2024-06-05-12-13-48.json"),
+                    "0.02": os.path.join(root_folder, "BUFFER", "buffer_interiornet_gsize0-05-noise0-02_2024-06-05-12-15-46.json"),
+                    "0.05": os.path.join(root_folder, "BUFFER", "buffer_interiornet_gsize0-05-noise0-05_2024-06-05-12-18-16.json"),
                 },
                 "DeepGlobalRegistration": {
-                    "0.00": os.path.join(
-                        root_folder,
-                        "DeepGlobalRegistration",
-                        "dgr_interiornet_gsize0-05-noise0-00_2024-05-26-19-00-31.json",
-                    ),
-                    "0.02": os.path.join(
-                        root_folder,
-                        "DeepGlobalRegistration",
-                        "dgr_interiornet_gsize0-05-noise0-02_2024-05-26-19-02-18.json",
-                    ),
-                    "0.05": os.path.join(
-                        root_folder,
-                        "DeepGlobalRegistration",
-                        "dgr_interiornet_gsize0-05-noise0-05_2024-05-26-19-30-36.json",
-                    ),
+                    "0.00": os.path.join(root_folder, "DeepGlobalRegistration", "dgr_interiornet_gsize0-05-noise0-00_2024-06-05-13-50-27.json"),
+                    "0.02": os.path.join(root_folder, "DeepGlobalRegistration", "dgr_interiornet_gsize0-05-noise0-02_2024-06-05-13-54-08.json"),
+                    "0.05": os.path.join(root_folder, "DeepGlobalRegistration", "dgr_interiornet_gsize0-05-noise0-05_2024-06-05-14-21-05.json"),
                 },
                 "GeoTransformer": {
-                    "0.00": os.path.join(
-                        root_folder,
-                        "GeoTransformer",
-                        "GeoTransformer_interiornet_gsize0-05-noise0-00_2024-05-26-19-10-53.json",
-                    ),
-                    "0.02": os.path.join(
-                        root_folder,
-                        "GeoTransformer",
-                        "GeoTransformer_interiornet_gsize0-05-noise0-02_2024-05-26-19-15-43.json",
-                    ),
-                    "0.05": os.path.join(
-                        root_folder,
-                        "GeoTransformer",
-                        "GeoTransformer_interiornet_gsize0-05-noise0-05_2024-05-26-19-35-40.json",
-                    ),
+                    "0.00": os.path.join(root_folder, "GeoTransformer", "GeoTransformer_interiornet_gsize0-05-noise0-00_2024-06-05-17-21-33.json"),
+                    "0.02": os.path.join(root_folder, "GeoTransformer", "GeoTransformer_interiornet_gsize0-05-noise0-02_2024-06-05-17-23-24.json"),
+                    "0.05": os.path.join(root_folder, "GeoTransformer", "GeoTransformer_interiornet_gsize0-05-noise0-05_2024-06-05-17-40-47.json"),
                 },
                 "RoITr": {
-                    "0.00": os.path.join(
-                        root_folder,
-                        "RoITr",
-                        "roitr_interiornet_gsize0-05-noise0-00_2024-05-26-19-07-09.json",
-                    ),
-                    "0.02": os.path.join(
-                        root_folder,
-                        "RoITr",
-                        "roitr_interiornet_gsize0-05-noise0-02_2024-05-26-19-08-02.json",
-                    ),
-                    "0.05": os.path.join(
-                        root_folder,
-                        "RoITr",
-                        "roitr_interiornet_gsize0-05-noise0-05_2024-05-26-19-09-01.json",
-                    ),
+                    "0.00": os.path.join(root_folder, "RoITr", "roitr_interiornet_gsize0-05-noise0-00_2024-05-26-19-07-09.json"),
+                    "0.02": os.path.join(root_folder, "RoITr", "roitr_interiornet_gsize0-05-noise0-02_2024-05-26-19-08-02.json"),
+                    "0.05": os.path.join(root_folder, "RoITr", "roitr_interiornet_gsize0-05-noise0-05_2024-05-26-19-09-01.json"),
                 },
             }
         }
     }
+    # fmt: on
 
     # Convert from files to actual data
     results_data = load_results_data(raw_data)
 
-    test = generate_plot(results_data["InteriorNet"]["g0.05"], names, colors)
+    test = generate_plot(
+        results_data["InteriorNet"]["g0.05"], names, colors, "interiornet05"
+    )
 
 
 if __name__ == "__main__":
