@@ -26,7 +26,7 @@ studies = {
             "orb-teaser-3d-kitti.json",
         ],
         "data_configs": [
-            "gsize0-05-noise0-00.json",
+            "gsize0-50-noise0-00.json",
         ],
     },
 }
