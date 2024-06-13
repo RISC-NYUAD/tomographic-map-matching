@@ -1,8 +1,8 @@
-TARGET = tomographic_map_matching
-.PHONY: build
-build:
-	@docker compose build $(TARGET)
+%.sif: %.def
+	singularity build --fakeroot --force --nv $@ $<
 
-.PHONY: shell
-shell:
-	@docker compose run --rm $(TARGET) /bin/bash
+consensus: Consensus/Consensus.sif
+geotr: GeoTransformer/GeoTransformer.sif
+buffer: BUFFER/BUFFER.sif
+roitr: RoITr/RoITr.sif
+dgr: DeepGlobalRegistration/DeepGlobalRegistration.sif

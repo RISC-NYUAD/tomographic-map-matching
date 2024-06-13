@@ -1,0 +1,7 @@
+{
+    "algorithm": 2,
+    "grid_size": 0.5,
+    "normal_radius": 2.0,
+    "keypoint_radius": 1.5,
+    "descriptor_radius": 2.5
+}
