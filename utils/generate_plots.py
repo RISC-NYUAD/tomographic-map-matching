@@ -395,6 +395,34 @@ def main():
                     "0.00": os.path.join(root_folder, "GeoTransformer", "GeoTransformer_kitti_gsize0-50-noise0-00_2024-06-06-15-04-25.json"),
                 },
             }
+        },
+        "A1": {
+            "g0.05": {
+                "Consensus": {
+                    "0.00": os.path.join(root_folder, "Consensus", "Consensus-2024-06-14-10-59-22.json"),
+                },
+                "FPFH-RANSAC": {
+                    "0.00": os.path.join(root_folder, "Consensus", "FPFH-RANSAC-2024-06-14-11-04-18.json"),
+                },
+                "FPFH-TEASER++": {
+                    "0.00": os.path.join(root_folder, "Consensus", "FPFH-TEASER-2024-06-14-11-17-17.json"),
+                },
+                "Tomographic-TEASER++": {
+                    "0.00": os.path.join(root_folder, "Consensus", "ORB-TEASER-2024-06-14-11-31-15.json"),
+                },
+                "ORB-TEASER++": {
+                    "0.00": os.path.join(root_folder, "Consensus", "ORB-TEASER-2024-06-14-11-43-03.json"),
+                },
+                "BUFFER": {
+                    "0.00": os.path.join(root_folder, "BUFFER", "buffer_a1-vdbmap_gsize0-05-noise0-00_2024-06-14-10-58-19.json"),
+                },
+                "DeepGlobalRegistration": {
+                    "0.00": os.path.join(root_folder, "DeepGlobalRegistration", "dgr_a1-vdbmap_gsize0-05-noise0-00_2024-06-14-10-56-47.json"),
+                },
+                "RoITr": {
+                    "0.00": os.path.join(root_folder, "RoITr", "roitr_a1-vdbmap_gsize0-05-noise0-00_2024-06-14-10-58-46.json"),
+                },
+            }
         }
     }
     # fmt: on
@@ -442,6 +470,20 @@ def main():
         limits,
         noise_levels,
         "kitti20",
+    )
+
+    # Experimental
+    thresholds = [0.05 * 5, 0.174533, 60, 1.6e10]
+    limits = [None, None, None, None]
+    noise_levels = ["0.00"]
+    generate_combined_plot(
+        results_data["A1"]["g0.05"],
+        names[:-2],
+        colors[:-2],
+        thresholds,
+        limits,
+        noise_levels,
+        "a1",
     )
 
     plt.show()
