@@ -25,7 +25,9 @@ def main():
         "--path", type=str, required=True, help="Path to the point cloud"
     )
     args = parser.parse_args()
-    pcd = load_pcd_from_path(args.path, color=np.array([228, 26, 28]) / 255)
+    color = {"red": [228, 26, 28], "green": [77, 175, 74], "blue": [55, 126, 184]}
+
+    pcd = load_pcd_from_path(args.path, color=np.array(color["green"]) / 255)
     o3d.visualization.draw_geometries([pcd["pcd"]])
 
 
