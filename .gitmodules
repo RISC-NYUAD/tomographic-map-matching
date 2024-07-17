@@ -13,3 +13,6 @@
 [submodule "DeepGlobalRegistration/repo"]
 	path = DeepGlobalRegistration/repo
 	url = https://github.com/h-utkuunlu/DeepGlobalRegistration
+[submodule "Consensus/repo"]
+	path = Consensus/repo
+	url = https://github.com/h-utkuunlu/tomographic-map-matching

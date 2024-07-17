@@ -9,9 +9,6 @@ From: ubuntu:22.04
 
 %files
     Consensus/estimateRigid2D.patch /usr/local/src/estimateRigid2D.patch
-    Consensus/workspace/src /usr/local/src/code/src
-    Consensus/workspace/include /usr/local/src/code/include
-    Consensus/workspace/CMakeLists.txt /usr/local/src/code/CMakeLists.txt
 
 %post
     export DEBIAN_FRONTEND=noninteractive
@@ -84,6 +81,8 @@ From: ubuntu:22.04
     make -j8 install
 
     # Build
+    cd /usr/local/src
+    git clone --depth 1 https://github.com/h-utkuunlu/tomographic-map-matching code
     cd /usr/local/src/code
     mkdir build && cd build
     cmake -DCMAKE_BUILD_TYPE=Release ..
