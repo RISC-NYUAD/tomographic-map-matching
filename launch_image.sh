@@ -18,5 +18,5 @@ singularity run --nv --no-home \
     --bind weights/$PKG:/weights \
     --bind results/$PKG:/results \
     --bind data-config:/data-config \
-    --bind $DATA_DIR:/data \
+    --bind ${DATA_DIR:-data}:/data \
     $PKG/$PKG.sif $@
