@@ -7,10 +7,11 @@ PKG=$(realpath --relative-to $1/.. $1)
 # Ensure the necessary folders exist at least
 mkdir -p results/$PKG
 mkdir -p weights/$PKG
+mkdir -p .tmp_home
 
 singularity exec --nv --no-home \
     --bind $PKG/workspace:/workspace \
-    --bind tmp_home:$HOME \
+    --bind .tmp_home:$HOME \
     --bind weights/$PKG:/weights \
     --bind results/$PKG:/results \
     --bind data-config:/data-config \
