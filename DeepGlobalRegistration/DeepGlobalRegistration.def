@@ -1,6 +1,9 @@
 Bootstrap: docker
 From: nvidia/cuda:11.1.1-cudnn8-devel-ubuntu20.04
 
+%files
+    DeepGlobalRegistration/repo /usr/local/src/DeepGlobalRegistration
+
 %post
     # GUI tools, dev tools etc.
     apt-get update
@@ -15,9 +18,7 @@ From: nvidia/cuda:11.1.1-cudnn8-devel-ubuntu20.04
     pip install --no-cache-dir -U git+https://github.com/NVIDIA/MinkowskiEngine -v --no-deps
 
     # Copy the fork to add changes
-    cd /usr/local/src
-    git clone https://github.com/h-utkuunlu/DeepGlobalRegistration
-    cd DeepGlobalRegistration
+    cd /usr/local/src/DeepGlobalRegistration
     pip install --no-cache-dir -r requirements.txt
 
     # Workspace to mount CWD / other places
