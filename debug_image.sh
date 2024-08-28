@@ -9,7 +9,7 @@ mkdir -p results/$PKG
 mkdir -p weights/$PKG
 mkdir -p .tmp_home
 
-singularity exec --nv --no-home \
+apptainer exec --nv --no-home \
     --bind $PKG/workspace:/workspace \
     --bind .tmp_home:$HOME \
     --bind weights/$PKG:/weights \

@@ -1,5 +1,5 @@
 %.sif: %.def
-	singularity build --fakeroot --force --nv $@ $<
+	apptainer build --fakeroot --force --nv $@ $<
 
 consensus: Consensus/Consensus.sif
 geotr: GeoTransformer/GeoTransformer.sif
