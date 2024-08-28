@@ -3,6 +3,7 @@ From: nvidia/cuda:11.1.1-cudnn8-devel-ubuntu20.04
 
 %files
     BUFFER/workspace/KNN_CUDA /workspace/KNN_CUDA
+    BUFFER/repo /usr/local/src/BUFFER
 
 %post
     # GUI tools, dev tools etc.
@@ -33,9 +34,7 @@ From: nvidia/cuda:11.1.1-cudnn8-devel-ubuntu20.04
     pip install -e .
 
     # Package itself
-    cd /usr/local/src
-    git clone https://github.com/h-utkuunlu/BUFFER
-    cd BUFFER/cpp_wrappers
+    cd /usr/local/src/BUFFER/cpp_wrappers
     sh compile_wrappers.sh
 
 %runscript
