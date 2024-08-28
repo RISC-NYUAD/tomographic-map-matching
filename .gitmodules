@@ -1,18 +1,24 @@
 [submodule "GeoTransformer/repo"]
 	path = GeoTransformer/repo
 	url = https://github.com/h-utkuunlu/GeoTransformer
+	shallow = true
 [submodule "BUFFER/repo"]
 	path = BUFFER/repo
 	url = https://github.com/h-utkuunlu/BUFFER
+	shallow = true
 [submodule "BUFFER/workspace/KNN_CUDA"]
 	path = BUFFER/workspace/KNN_CUDA
 	url = https://github.com/unlimblue/KNN_CUDA.git
+	shallow = true
 [submodule "RoITr/repo"]
 	path = RoITr/repo
 	url = https://github.com/h-utkuunlu/RoITr
+	shallow = true
 [submodule "DeepGlobalRegistration/repo"]
 	path = DeepGlobalRegistration/repo
 	url = https://github.com/h-utkuunlu/DeepGlobalRegistration
+	shallow = true
 [submodule "Consensus/repo"]
 	path = Consensus/repo
 	url = https://github.com/h-utkuunlu/tomographic-map-matching
+	shallow = true
