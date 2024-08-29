@@ -12,7 +12,7 @@ mkdir -p .tmp_home
 # Pass everything except the PKG (folder)
 shift
 
-apptainer run --nv --no-home \
+apptainer run --nvccli --no-home \
     --bind $PKG/workspace:/workspace \
     --bind .tmp_home:$HOME \
     --bind weights/$PKG:/weights \
