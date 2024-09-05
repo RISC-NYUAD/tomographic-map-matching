@@ -1,3 +1,0 @@
-* Dataset configurations
-
-Use scripts in ~utils~ to generate dataset configurations .json files for different dataset setups in this folder.

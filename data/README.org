@@ -1,0 +1,5 @@
+* Data
+
+Data configurations used in obtaining the data provided in the paper are located in ~config~. Variations of these files can also be generated from scripts in ~utils~ for different dataset setups.
+
+Data itself can be provided upon request.

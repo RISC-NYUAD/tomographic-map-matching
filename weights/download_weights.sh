@@ -11,6 +11,8 @@ show_info ()
     echo "$FMT$1$OFF"
 }
 
+show_info ">> Downloading weights..."
+
 # Function to automate downloads
 download_weights ()
 {
@@ -68,3 +70,5 @@ for SUBFOLDER in $SUBFOLDERS; do
     URL_BASE=$URL_BASE_KITTI/$SUBFOLDER
     download_weights
 done
+
+show_info ">> Finished downloading weights!"
