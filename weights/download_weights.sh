@@ -53,13 +53,13 @@ download_weights
 # BUFFER
 show_info ">> BUFFER"
 # Structure is somewhat different than the rest. Indoors (ThreeDMatch) first
-PKG=BUFFER
+FOLDER=BUFFER
 URL_BASE=https://github.com/h-utkuunlu/BUFFER/releases/download/v0.0.0
 FILES="KITTI.zip ThreeDMatch.zip"
 download_weights
 
 # Unzip
-unzip $PKG/KITTI.zip
-unzip $PKG/ThreeDMatch.zip
+unzip -ud $FOLDER $FOLDER/KITTI.zip
+unzip -ud $FOLDER $FOLDER/ThreeDMatch.zip
 
 show_info ">> Finished downloading weights!"
