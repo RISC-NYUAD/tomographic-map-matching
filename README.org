@@ -1,3 +1,47 @@
 * Tomographic Map Matching
 
-TODO
+This repository hosts the code used to perform the studies in our paper titled [[https://arxiv.org/abs/2406.19461][Efficient and Distributed Large-Scale 3D Map Registration using Tomographic Features]].
+
+* Installation
+
+The algorithms have been implemented to run within [[https://github.com/apptainer/apptainer][Apptainer]] (formerly Singularity) containers for portability and execution on various platforms, including HPC clusters. Tested on Singularity CE 3.8.1, 4.1.2 and Apptainer 1.3.3.
+
+1. Follow the [[https://apptainer.org/docs/admin/main/installation.html][installation steps]] from Apptainer website to install the latest version.
+
+2. Clone the repository recursively & download additional files
+
+#+begin_src shell
+git clone --recursive https://github.com/RISC-NYUAD/tomographic-map-matching
+cd tomographic-map-matching
+make init
+#+end_src
+
+* Running an algorithm on data
+
+Some example data configurations are provided for the data used in the experiment. Other configurations can be generated using scripts in ~utils~.
+
+To build the container for a particular algorithm, use ~make {name}~, with container names:
+- ~roitr~ for RoITr
+- ~geotr~ for GeoTransformer
+- ~dgr~ for DeepGlobalRegistration
+- ~buffer~ for BUFFER
+- ~consensus~ for the proposed method
+- ~all~ for all of the above (takes a long time)
+
+Once the container is built, the algorithm can be run by invoking  ~launch_image.sh~ script with the folder name:
+
+#+begin_src shell
+./launch_image.sh {Consensus,BUFFER,RoITr,DeepGlobalRegistration,GeoTransformer}
+#+end_src
+
+A simple demo pair can be run using
+
+#+begin_src shell
+./launch_image.sh Consensus --data_config /data/config/demo/demo.json --parameter_config /workspace/config/consensus-interiornet.json
+#+end_src
+
+If you would like to see the visuals, allow xhost access by running ~xhost +local:~ and appending ~--visualize~ flag to the above sample:
+
+#+begin_src shell
+./launch_image.sh Consensus --data_config /data/config/demo/demo.json --parameter_config /workspace/config/consensus-interiornet.json --visualize
+#+end_src

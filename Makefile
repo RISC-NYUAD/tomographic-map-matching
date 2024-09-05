@@ -1,3 +1,5 @@
+all: consensus geotr buffer roitr dgr
+
 %.sif: %.def
 	apptainer build --fakeroot --force --nv $@ $<
 

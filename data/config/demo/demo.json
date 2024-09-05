@@ -1,0 +1,13 @@
+{
+  "root": "/data/demo",
+  "pairs": [
+    [
+      "demo-room-1.pcd",
+      "demo-room-2.pcd"
+    ],
+    [
+      "demo-room-2.pcd",
+      "demo-room-1.pcd"
+    ]
+  ]
+}

@@ -17,6 +17,5 @@ apptainer run --nvccli --no-home \
     --bind .tmp_home:$HOME \
     --bind weights/$PKG:/weights \
     --bind results/$PKG:/results \
-    --bind data-config:/data-config \
     --bind ${DATA_DIR:-data}:/data \
     $PKG/$PKG.sif $@
