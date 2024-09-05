@@ -9,5 +9,5 @@ dgr: DeepGlobalRegistration/DeepGlobalRegistration.sif
 
 .PHONY: init
 init:
-	data/download_data.sh
-	weights/download_weights.sh
+	(cd data && ./download_data.sh)
+	(cd weights && ./download_weights.sh)
