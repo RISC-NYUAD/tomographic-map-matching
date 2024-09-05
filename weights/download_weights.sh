@@ -54,21 +54,12 @@ download_weights
 show_info ">> BUFFER"
 # Structure is somewhat different than the rest. Indoors (ThreeDMatch) first
 PKG=BUFFER
-URL_BASE_TDM=https://raw.githubusercontent.com/h-utkuunlu/BUFFER/main/ThreeDMatch/snapshot/06132318
-SUBFOLDERS="Desc Inlier Keypt Ref"
-FILES="best.pth"
+URL_BASE=https://github.com/h-utkuunlu/BUFFER/releases/download/v0.0.0
+FILES="KITTI.zip ThreeDMatch.zip"
+download_weights
 
-for SUBFOLDER in $SUBFOLDERS; do
-    FOLDER=$PKG/ThreeDMatch/$SUBFOLDER
-    URL_BASE=$URL_BASE_TDM/$SUBFOLDER
-    download_weights
-done
-
-URL_BASE_KITTI=https://raw.githubusercontent.com/h-utkuunlu/BUFFER/main/KITTI/snapshot/06050001
-for SUBFOLDER in $SUBFOLDERS; do
-    FOLDER=$PKG/KITTI/$SUBFOLDER
-    URL_BASE=$URL_BASE_KITTI/$SUBFOLDER
-    download_weights
-done
+# Unzip
+unzip $PKG/KITTI.zip
+unzip $PKG/ThreeDMatch.zip
 
 show_info ">> Finished downloading weights!"
