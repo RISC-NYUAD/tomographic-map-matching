@@ -1,7 +1,7 @@
 all: consensus geotr buffer roitr dgr
 
 %.sif: %.def
-	apptainer build --fakeroot --force --nv $@ $<
+	apptainer build --fakeroot --force --nvccli $@ $<
 
 consensus: Consensus/Consensus.sif
 geotr: GeoTransformer/GeoTransformer.sif
