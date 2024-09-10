@@ -1,74 +1,25 @@
 Bootstrap: docker
-From: ubuntu:22.04
+From: ubuntu:24.04
 
 %setup
     mkdir ${SINGULARITY_ROOTFS}/workspace
 
+%files
+    Consensus/repo /usr/local/src/code
+
 %environment
     export LD_LIBRARY_PATH=/usr/local/lib
-
-%files
-    Consensus/estimateRigid2D.patch /usr/local/src/estimateRigid2D.patch
 
 %post
     export DEBIAN_FRONTEND=noninteractive
 
     # GUI tools, dev tools etc.
     apt-get update
-    apt-get install --no-install-recommends -y git libgl1 libgomp1 mesa-utils wget build-essential cmake libspdlog-dev libgflags-dev nlohmann-json3-dev tzdata gdb
+    apt-get install --no-install-recommends -y git libgl1 libgomp1 mesa-utils wget build-essential cmake libspdlog-dev libgflags-dev nlohmann-json3-dev tzdata gdb libopencv-dev libpcl-dev
     apt-get clean
-
-    cd /usr/local/src
-
-    # PCL
-    apt-get install -y --no-install-recommends libboost-all-dev libeigen3-dev libflann-dev libvtk9-dev libvtk9-qt-dev
-    apt-get clean
-
-    export PCL_VERSION=1.14.0
-    wget -q https://github.com/PointCloudLibrary/pcl/archive/refs/tags/pcl-$PCL_VERSION.tar.gz
-    tar -xf pcl-$PCL_VERSION.tar.gz
-    rm pcl-$PCL_VERSION.tar.gz
-
-    cd pcl-pcl-$PCL_VERSION
-    mkdir build && cd build
-    cmake -DCMAKE_BUILD_TYPE=Release ..
-    make -j8 install
-
-    cd /usr/local/src
-
-    # OpenCV
-    export OPENCV_VERSION=4.9.0
-    wget -q -O opencv.tar.gz https://github.com/opencv/opencv/archive/refs/tags/$OPENCV_VERSION.tar.gz
-    wget -q -O opencv_contrib.tar.gz https://github.com/opencv/opencv_contrib/archive/refs/tags/$OPENCV_VERSION.tar.gz
-    tar -xf opencv.tar.gz
-    tar -xf opencv_contrib.tar.gz
-    rm opencv.tar.gz opencv_contrib.tar.gz
-
-    cd opencv-$OPENCV_VERSION
-    git apply ../estimateRigid2D.patch
-    mkdir build && cd build
-    cmake \
-    -DOPENCV_EXTRA_MODULES_PATH=../../opencv_contrib-$OPENCV_VERSION/modules \
-    -DBUILD_LIST=calib3d,xfeatures2d,highgui \
-    -DBUILD_TESTS=OFF \
-    -DBUILD_PERF_TESTS=OFF \
-    -DBUILD_opencv_apps=OFF \
-    -DBUILD_JAVA=OFF \
-    -DWITH_OPENCL=OFF \
-    -DWITH_V4L=OFF \
-    -DWITH_FFMPEG=OFF \
-    -DVIDEOIO_ENABLE_PLUGINS=OFF \
-    -DWITH_GSTREAMER=OFF \
-    -DWITH_OPENMP=ON \
-    -DOPENCV_ENABLE_NONFREE=ON \
-    -DWITH_GTK=OFF \
-    -DWITH_QT=ON \
-    -DCMAKE_BUILD_TYPE=Release ..
-    make -j8 install
-
-    cd /usr/local/src
 
     # TEASER++
+    cd /usr/local/src
     git clone --depth 1 https://github.com/MIT-SPARK/TEASER-plusplus
     cd TEASER-plusplus
     mkdir build && cd build
@@ -80,9 +31,7 @@ From: ubuntu:22.04
     -DBUILD_WITH_MARCH_NATIVE=ON ..
     make -j8 install
 
-    # Build
-    cd /usr/local/src
-    git clone --depth 1 https://github.com/h-utkuunlu/tomographic-map-matching code
+    # Build code
     cd /usr/local/src/code
     mkdir build && cd build
     cmake -DCMAKE_BUILD_TYPE=Release ..
