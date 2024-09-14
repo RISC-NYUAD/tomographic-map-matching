@@ -2,4 +2,4 @@
 
 Data configurations used in obtaining the data provided in the paper are located in ~config~. Variations of these files can also be generated from scripts in ~utils~ for different dataset setups.
 
-Data itself can be provided upon request.
+Partial experimental data can be downloaded from https://doi.org/10.58153/m859g-t4p13.

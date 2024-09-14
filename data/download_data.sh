@@ -13,6 +13,17 @@ show_info ()
 
 show_info ">> Downloading data..."
 
-# TODO
+FILE=tomographic-map-matching-data.zip
 
-show_info ">> Finished downloading data!"
+if [ -f "$FILE" ]
+then
+    echo "- File $FILE exists. Skipping download..."
+else
+    URL=https://ultraviolet.library.nyu.edu/records/m859g-t4p13/files/tomographic-map-matching-data.zip
+    wget --show-progress --quiet $URL
+fi
+
+show_info ">> Extracting data..."
+unzip -u $FILE
+
+show_info ">> Finished retrieving data!"
