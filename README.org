@@ -45,3 +45,5 @@ If you would like to see the visuals, allow xhost access by running ~xhost +loca
 #+begin_src shell
 ./launch_image.sh Consensus --data_config /data/config/demo/demo.json --parameter_config /workspace/config/consensus-interiornet.json --visualize
 #+end_src
+
+Partial data used for the studies can be found in this [[https://ultraviolet.library.nyu.edu/records/m859g-t4p13][NYU UltraViolet repository]]. 
